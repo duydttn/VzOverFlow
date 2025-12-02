@@ -1,0 +1,52 @@
+﻿@model IEnumerable<VzOverFlow.Models.ViewModels.LearningPathViewModel>
+@{
+    ViewData["Title"] = "Chế độ học tập";
+}
+
+<div class="mb-6">
+    <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-1">
+        Chế độ học tập
+    </h1>
+    <p class="text-sm text-slate-600">
+        Các lộ trình được tạo dựa trên tag đang hoạt động nhất trong cộng đồng.
+    </p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bg-white border border-slate-200 rounded-lg p-4 text-sm text-slate-600">
+        Chưa có dữ liệu để gợi ý lộ trình học. Hãy đăng câu hỏi đầu tiên nhé!
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        @foreach (var path in Model)
+        {
+            var completion = Math.Min(1d, path.Completion);
+            <section class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <h2 class="text-sm font-semibold text-slate-900 mb-1">
+                    @path.TagName.ToUpperInvariant() fundamentals
+                </h2>
+                <p class="text-slate-600 mb-2">
+                    Có @path.QuestionCount câu hỏi và @path.AnswerCount câu trả lời đã được chia sẻ cho chủ đề này.
+                </p>
+                <div class="flex flex-wrap gap-1 mb-2">
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">@path.TagName</span>
+                </div>
+                <div class="mb-2">
+                    <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+                        <span>Tiến độ cộng đồng</span><span>@Math.Round(completion * 100, 0)%</span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full bg-blue-500" style="width:@(completion * 100)%"></div>
+                    </div>
+                </div>
+                <a asp-controller="Questions" asp-action="Index" asp-route-tag="@path.TagName"
+                   class="mt-2 inline-flex items-center rounded-md bg-slate-900 text-white px-3 py-1.5 text-[11px] hover:bg-slate-800">
+                    Xem câu hỏi về @path.TagName
+                </a>
+            </section>
+        }
+    </div>
+}

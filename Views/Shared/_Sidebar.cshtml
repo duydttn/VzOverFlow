@@ -1,0 +1,57 @@
+﻿@using System.Security.Claims
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var currentUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    string ActiveClass(bool condition) =>
+        condition ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100";
+}
+
+<aside class="hidden md:block md:col-span-2">
+    <nav class="space-y-1 text-sm">
+        <a asp-controller="Home" asp-action="Index"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Home")">
+            Trang chủ
+        </a>
+
+        <a asp-controller="Questions" asp-action="Index"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Questions")">
+            Câu hỏi
+        </a>
+
+        <a asp-controller="Tags" asp-action="Index"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Tags")">
+            Thẻ (Tags)
+        </a>
+
+        <a asp-controller="Users" asp-action="Index"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Users" && currentAction == "Index")">
+            Người dùng
+        </a>
+        @if (!string.IsNullOrEmpty(currentUserId))
+        {
+            <a asp-controller="Users" asp-action="Profile" asp-route-id="@currentUserId"
+               class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Users" && currentAction == "Profile")">
+                Hồ sơ của tôi
+            </a>
+        }
+
+        <hr class="my-3 border-slate-200" />
+
+        <div class="px-2 text-xs font-semibold text-slate-500 uppercase">Khám phá</div>
+
+        <a asp-controller="Home" asp-action="Leaderboard"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Home" && currentAction == "Leaderboard")">
+            Bảng xếp hạng
+        </a>
+        <a asp-controller="Home" asp-action="Badges"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Home" && currentAction == "Badges")">
+            Huy hiệu
+        </a>
+        <a asp-controller="Home" asp-action="Learn"
+           class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Home" && currentAction == "Learn")">
+            Chế độ học tập
+        </a>
+    </nav>
+</aside>

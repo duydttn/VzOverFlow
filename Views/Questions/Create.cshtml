@@ -1,0 +1,85 @@
+﻿@model VzOverFlow.Models.Question
+@{
+    ViewData["Title"] = "Đặt câu hỏi";
+}
+
+<div class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-2">
+        Đặt câu hỏi
+    </h1>
+    <p class="text-sm text-slate-600">
+        Chia sẻ vấn đề bạn gặp phải và nhận sự giúp đỡ từ cộng đồng VzOverFlow.
+    </p>
+</div>
+
+<form asp-action="Create" method="post" id="ask-question-form">
+    @Html.AntiForgeryToken()
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form chính -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+                <div class="mb-4">
+                    <label asp-for="Title" class="block text-sm font-semibold text-slate-800 mb-1">
+                        Tiêu đề <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-xs text-slate-500 mb-2">
+                        Hãy tóm tắt rõ ràng vấn đề của bạn trong một câu.
+                    </p>
+                    <input asp-for="Title"
+                           class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <span asp-validation-for="Title" class="text-xs text-red-500"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Body" class="block text-sm font-semibold text-slate-800 mb-1">
+                        Nội dung chi tiết <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-xs text-slate-500 mb-2">
+                        Mô tả chi tiết vấn đề, ngữ cảnh, mã nguồn (nếu có) và những gì bạn đã thử.
+                    </p>
+                    <textarea asp-for="Body" rows="10"
+                              class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    <span asp-validation-for="Body" class="text-xs text-red-500"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-800 mb-1">
+                        Thẻ (Tags)
+                    </label>
+                    <p class="text-xs text-slate-500 mb-2">
+                        Thêm tối đa 5 thẻ, cách nhau bởi khoảng trắng. Ví dụ: <code class="bg-slate-100 px-1 rounded">c# asp.net-core entity-framework</code>
+                    </p>
+                    <input name="tags"
+                           value=""
+                           class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <a asp-action="Index"
+                       class="text-xs text-slate-500 hover:text-slate-700">
+                        Hủy và quay lại danh sách
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-4 py-2 hover:bg-blue-700 shadow-sm">
+                        Đăng câu hỏi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel gợi ý / hướng dẫn -->
+        <aside class="space-y-4">
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-xs text-blue-900">
+                <h2 class="text-sm font-semibold mb-2">Làm thế nào để câu hỏi chất lượng?</h2>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Rõ ràng: nêu đúng một vấn đề trong mỗi câu hỏi.</li>
+                    <li>Cụ thể: đưa ví dụ code, dữ liệu đầu vào/đầu ra.</li>
+                    <li>Có bối cảnh: stack, phiên bản, framework đang dùng.</li>
+                    <li>Nêu những gì bạn đã thử và kết quả.</li>
+                </ul>
+            </div>
+
+            @await Html.PartialAsync("_QualityChecker")
+        </aside>
+    </div>
+</form>

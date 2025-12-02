@@ -1,0 +1,53 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - VzOverFlow</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/index.css" asp-append-version="true" />
+</head>
+<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur-sm shadow-sm">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex h-16 items-center justify-between gap-4">
+                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 group">
+                    <div class="bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold rounded-md h-8 w-8 flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all">
+                        Vz
+                    </div>
+                    <span class="font-semibold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">
+                        VzOverFlow
+                    </span>
+                </a>
+
+                <div class="flex items-center gap-2">
+                    <a asp-controller="Questions" asp-action="Create"
+                       class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-3 py-1.5 hover:bg-blue-700 transition-colors">
+                        <span class="font-medium">Đặt câu hỏi</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center py-12 px-4">
+        <div class="w-full max-w-md">
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="border-t bg-white mt-auto">
+        <div class="max-w-6xl mx-auto px-4 py-4 text-xs text-slate-500 flex justify-between">
+            <span>© @DateTime.Now.Year VzOverFlow</span>
+            <span>Học hỏi cùng cộng đồng lập trình Việt</span>
+        </div>
+    </footer>
+
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+

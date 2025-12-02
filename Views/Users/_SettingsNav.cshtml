@@ -1,0 +1,26 @@
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    string TabClass(string action) =>
+        currentAction.Equals(action, StringComparison.OrdinalIgnoreCase)
+            ? "border-slate-900 text-slate-900"
+            : "border-transparent text-slate-500 hover:text-slate-700";
+}
+
+<nav class="border-b border-slate-200 mb-6 text-sm font-medium">
+    <ul class="flex -mb-px">
+        <li class="mr-4">
+            <a asp-controller="Users" asp-action="AccountSettings"
+               class="inline-block px-3 py-2 border-b-2 @TabClass("AccountSettings")">
+                Cài đặt tài khoản
+            </a>
+        </li>
+        <li>
+            <a asp-controller="Users" asp-action="SecuritySettings"
+               class="inline-block px-3 py-2 border-b-2 @TabClass("SecuritySettings")">
+                Bảo mật & OTP
+            </a>
+        </li>
+    </ul>
+</nav>
+
+

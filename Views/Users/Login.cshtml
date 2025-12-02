@@ -1,0 +1,45 @@
+﻿@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "_AuthLayout";
+}
+
+<div class="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+    <h1 class="text-2xl font-semibold text-slate-900 mb-1 text-center">Đăng nhập</h1>
+    <p class="text-sm text-slate-600 mb-6 text-center">
+        Chào mừng trở lại VzOverFlow
+    </p>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            @ViewBag.Error
+        </div>
+    }
+
+    <form asp-action="Login" method="post" class="space-y-4">
+        @Html.AntiForgeryToken()
+
+        <div>
+            <label class="block text-sm font-medium text-slate-800 mb-1">Tên đăng nhập hoặc email</label>
+            <input name="username"
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="username hoặc email" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
+            <input name="password" type="password"
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+
+        <button type="submit"
+                class="w-full rounded-md bg-slate-900 text-white text-sm px-3 py-2 hover:bg-slate-800">
+            Đăng nhập
+        </button>
+    </form>
+
+    <p class="text-xs text-slate-500 mt-4 text-center">
+        Chưa có tài khoản?
+        <a asp-action="Register" class="text-blue-600 hover:underline">Đăng ký ngay</a>
+    </p>
+</div>

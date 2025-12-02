@@ -1,0 +1,132 @@
+﻿@model VzOverFlow.Models.ViewModels.QuestionDetailViewModel
+@{
+    ViewData["Title"] = Model.Question.Title;
+    var question = Model.Question;
+}
+
+<div class="mb-4 flex items-start justify-between gap-4">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-2">
+            @question.Title
+        </h1>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            <span>Hỏi @question.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            @if (question.UpdatedAt.HasValue)
+            {
+                <span>•</span>
+                <span>Chỉnh sửa @question.UpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            }
+            <span>•</span>
+            <span>@question.ViewCount lượt xem</span>
+        </div>
+    </div>
+
+    <a asp-controller="Questions" asp-action="Edit" asp-route-id="@question.Id"
+       class="hidden sm:inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50">
+        Chỉnh sửa
+    </a>
+</div>
+
+@await Html.PartialAsync("_AISummary", Model)
+
+<div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm mb-6">
+    <div class="flex gap-4">
+        <!-- Votes -->
+        <div class="flex flex-col items-center text-sm text-slate-700">
+            <div class="mb-2 text-xl font-semibold">@Model.VoteScore</div>
+            <div class="text-xs text-slate-500 mb-4">votes</div>
+
+            <!-- Nút vote demo (chưa AJAX) -->
+            <form asp-action="VoteQuestion" asp-controller="Questions" method="post" class="space-y-1">
+                @* Tự thêm action nếu muốn *@
+            </form>
+        </div>
+
+        <!-- Nội dung -->
+        <div class="flex-1 min-w-0">
+            <div class="prose max-w-none text-sm text-slate-800 mb-4 whitespace-pre-wrap">
+                @question.Body
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-4">
+                <div class="flex flex-wrap gap-1">
+                    @foreach (var tag in question.Tags)
+                    {
+                        <a asp-controller="Questions" asp-action="Index" asp-route-tag="@tag.Name"
+                           class="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-700 px-2 py-0.5 hover:bg-slate-200">
+                            @tag.Name
+                        </a>
+                    }
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>hỏi bởi</span>
+                    <span class="font-medium text-slate-800">@question.User.UserName</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách trả lời -->
+<div class="mb-4 flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">
+        @Model.AnswerCount câu trả lời
+    </h2>
+</div>
+
+<div class="space-y-4 mb-8">
+@foreach (var answer in question.Answers.OrderByDescending(a => a.IsAccepted).ThenBy(a => a.CreatedAt))
+{
+    var score = answer.Votes?.Sum(v => v.Value) ?? 0;
+    <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+        <div class="flex gap-4">
+            <div class="flex flex-col items-center text-sm text-slate-700 min-w-[40px]">
+                <div class="font-semibold">@score</div>
+                <div class="text-[11px] text-slate-500">votes</div>
+                @if (answer.IsAccepted)
+                {
+                    <div class="mt-2 text-green-600 text-xs font-semibold">
+                        ✓ Accepted
+                    </div>
+                }
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="prose max-w-none text-sm text-slate-800 mb-3 whitespace-pre-wrap">
+                    @answer.Body
+                </div>
+
+                <div class="flex justify-between items-center text-xs text-slate-500">
+                    <div class="flex items-center gap-2">
+                        <span>trả lời</span>
+                        <span>@answer.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-slate-800">@answer.User.UserName</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+}
+</div>
+
+<!-- Form trả lời -->
+<section class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+    <h3 class="text-lg font-semibold text-slate-900 mb-3">
+        Viết câu trả lời của bạn
+    </h3>
+    <form asp-controller="Answers" asp-action="Create" method="post" class="space-y-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="questionId" value="@question.Id" />
+        <textarea name="Body" rows="8"
+                  class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Hãy mô tả rõ ràng cách giải quyết, giải thích nguyên nhân, và cung cấp ví dụ code nếu cần."></textarea>
+        <p class="text-[11px] text-slate-500">
+            Bằng việc đăng câu trả lời, bạn đồng ý chia sẻ nội dung dưới giấy phép phù hợp cho cộng đồng.
+        </p>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-4 py-2 hover:bg-blue-700 shadow-sm">
+            Đăng câu trả lời
+        </button>
+    </form>
+</section>

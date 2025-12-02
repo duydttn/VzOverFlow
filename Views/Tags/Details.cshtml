@@ -1,0 +1,101 @@
+﻿@model VzOverFlow.Models.Tag
+@{
+    ViewData["Title"] = $"Thẻ: {Model.Name}";
+    var questions = Model.Questions ?? new List<VzOverFlow.Models.Question>();
+}
+
+<div class="mb-6 flex items-start justify-between gap-4">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-2">
+            Thẻ: <span class="text-blue-700">@Model.Name</span>
+        </h1>
+        <p class="text-sm text-slate-600 max-w-2xl">
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                @Model.Description
+            }
+            else
+            {
+                @:Chưa có mô tả cho thẻ này. Bạn có thể sử dụng thẻ cho các câu hỏi liên quan đến <strong>@Model.Name</strong>.
+            }
+        </p>
+    </div>
+
+    <div class="hidden sm:block text-right">
+        <div class="text-xs text-slate-500">Tổng số câu hỏi</div>
+        <div class="text-2xl font-semibold text-slate-900">@questions.Count</div>
+    </div>
+</div>
+
+@if (!questions.Any())
+{
+    <div class="bg-white border border-slate-200 rounded-lg p-4 text-sm text-slate-600">
+        Chưa có câu hỏi nào gắn thẻ <strong>@Model.Name</strong>.
+        <a asp-controller="Questions" asp-action="Create" class="text-blue-600 hover:underline">
+            Hãy là người đầu tiên đặt câu hỏi với thẻ này!
+        </a>
+    </div>
+}
+else
+{
+    <div class="mb-3 text-xs text-slate-500">
+        @questions.Count câu hỏi được gắn thẻ <span class="font-semibold">@Model.Name</span>
+    </div>
+
+    <div class="space-y-3">
+        @foreach (var q in questions.OrderByDescending(x => x.CreatedAt))
+        {
+            var voteScore = q.Votes?.Sum(v => v.Value) ?? 0;
+            var answerCount = q.Answers?.Count ?? 0;
+            var viewCount = q.ViewCount;
+
+            <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-blue-500 transition-colors">
+                <div class="flex gap-4">
+                    <!-- Stats giống QuestionCard -->
+                    <div class="flex flex-col items-stretch text-center text-xs min-w-[80px]">
+                        <div class="mb-2 px-2 py-1 rounded-md bg-slate-50">
+                            <div class="font-semibold text-slate-800">@voteScore</div>
+                            <div class="text-[11px] text-slate-500">votes</div>
+                        </div>
+                        <div class="mb-2 px-2 py-1 rounded-md @(answerCount > 0 ? "bg-green-50" : "bg-slate-50")">
+                            <div class="font-semibold @(answerCount > 0 ? "text-green-600" : "text-slate-800")">
+                                @answerCount
+                            </div>
+                            <div class="text-[11px] text-slate-500">answers</div>
+                        </div>
+                        <div class="px-2 py-1 rounded-md bg-slate-50">
+                            <div class="font-semibold text-slate-800">@viewCount</div>
+                            <div class="text-[11px] text-slate-500">views</div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-sm md:text-base font-semibold text-blue-700 mb-1 line-clamp-2">
+                            <a asp-controller="Questions" asp-action="Details" asp-route-id="@q.Id"
+                               class="hover:underline">
+                                @q.Title
+                            </a>
+                        </h2>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-[11px]">
+                            <div class="flex flex-wrap gap-1">
+                                @foreach (var t in q.Tags)
+                                {
+                                    <a asp-controller="Tags" asp-action="Details" asp-route-name="@t.Name"
+                                       class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 hover:bg-slate-200">
+                                        @t.Name
+                                    </a>
+                                }
+                            </div>
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <span>hỏi @q.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                <span>•</span>
+                                <span class="font-medium text-slate-700">@q.User.UserName</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+}

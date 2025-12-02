@@ -1,0 +1,72 @@
+﻿@model VzOverFlow.Models.ViewModels.QuestionDetailViewModel
+@{
+    Func<string, int, string> truncate = (text, maxLength) =>
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        return text.Length <= maxLength
+            ? text
+            : text.Substring(0, maxLength) + "…";
+    };
+
+    var answers = Model.Question.Answers ?? Enumerable.Empty<VzOverFlow.Models.Answer>();
+    var enrichedAnswers = answers
+        .Select(a => new
+        {
+            Answer = a,
+            Score = a.Votes?.Sum(v => v.Value) ?? 0
+        })
+        .OrderByDescending(a => a.Answer.IsAccepted)
+        .ThenByDescending(a => a.Score)
+        .ToList();
+
+    var best = enrichedAnswers.FirstOrDefault();
+    var totalVotes = enrichedAnswers.Sum(a => a.Score);
+}
+
+<section class="bg-slate-900 text-slate-50 rounded-lg p-4 mb-4 shadow-sm text-xs">
+    <div class="flex items-start justify-between gap-3">
+        <div class="flex gap-2">
+            <span class="mt-0.5 text-yellow-300 text-lg">✨</span>
+            <div class="flex-1">
+                <div class="text-sm font-semibold mb-1">
+                    Tóm tắt từ cộng đồng
+                </div>
+                @if (best != null)
+                {
+                    <p class="text-slate-200 mb-2">
+                        <strong>@best.Answer.User.UserName</strong> đề xuất:
+                        @truncate(best.Answer.Body, 240)
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-3 text-[11px] text-slate-300">
+                        <div class="bg-slate-800/50 rounded-md px-3 py-2">
+                            <div class="text-slate-400">Câu trả lời hàng đầu</div>
+                            <div class="font-semibold text-white">@best.Score vote</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-md px-3 py-2">
+                            <div class="text-slate-400">Tổng phản hồi</div>
+                            <div class="font-semibold text-white">@Model.AnswerCount câu trả lời • @totalVotes vote</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-slate-200 mb-2">
+                        Chưa có câu trả lời nào. Hãy là người đầu tiên đưa ra lời giải thích chi tiết và nhận reputation từ cộng đồng!
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="flex flex-col items-end gap-2">
+            <span class="rounded-full bg-slate-800 px-3 py-1 text-[11px]">Community insight</span>
+            <div class="text-[11px] text-slate-400 text-right">
+                Dữ liệu tổng hợp từ câu trả lời thật trong chủ đề này.
+            </div>
+        </div>
+    </div>
+</section>

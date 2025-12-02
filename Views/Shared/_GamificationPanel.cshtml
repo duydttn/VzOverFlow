@@ -1,0 +1,53 @@
+﻿@model VzOverFlow.Models.ViewModels.UserProfileViewModel
+@{
+    var tasks = new[]
+    {
+        new { Title = "Đặt 5 câu hỏi", Progress = Model.QuestionCount, Target = 5, Reward = 40, Icon = "💬" },
+        new { Title = "Trả lời 3 câu hỏi", Progress = Model.AnswerCount, Target = 3, Reward = 60, Icon = "✍️" },
+        new { Title = "Vote 10 lần", Progress = Model.VoteCount, Target = 10, Reward = 30, Icon = "👍" }
+    };
+}
+
+<section class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-xs">
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+            <span class="h-6 w-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 text-lg">🔥</span>
+            <div>
+                <div class="text-sm font-semibold text-slate-800">Nhiệm vụ cộng đồng</div>
+                <div class="text-[11px] text-slate-500">Hoàn thành nhiệm vụ để nhận XP</div>
+            </div>
+        </div>
+        <span class="text-[11px] text-orange-600 font-medium">
+            Thành tích @Model.UserName
+        </span>
+    </div>
+
+    <ul class="space-y-3 mb-3">
+        @foreach (var task in tasks)
+        {
+            var percent = Math.Min(1d, task.Progress / (double)task.Target);
+            var isDone = percent >= 1;
+            <li class="flex items-start gap-3">
+                <span class="mt-0.5 text-lg">@task.Icon</span>
+                <div class="flex-1">
+                    <div class="font-medium text-slate-800 flex items-center justify-between">
+                        <span>@task.Title</span>
+                        <span class="text-[11px] text-slate-500">@task.Progress/@task.Target</span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-1">
+                        <div class="h-full @(isDone ? "bg-emerald-500" : "bg-orange-400")"
+                             style="width:@(percent * 100)%"></div>
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-1">
+                        @(isDone ? "Hoàn thành" : $"Cần {task.Target - task.Progress} nữa") • +@task.Reward XP
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+
+    <div class="rounded-md bg-slate-50 text-[11px] text-slate-600 px-3 py-2">
+        Hôm nay bạn đã nhận được tổng cộng
+        <span class="font-semibold text-slate-900">@Model.Reputation XP</span>. Tiếp tục đóng góp để mở thêm huy hiệu!
+    </div>
+</section>

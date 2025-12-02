@@ -1,0 +1,40 @@
+@model VzOverFlow.Models.ViewModels.RightSidebarViewModel
+
+<aside class="hidden lg:block lg:col-span-3">
+    <div class="space-y-4">
+        <section class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-800 mb-3">Về VzOverFlow</h2>
+            <p class="text-xs text-slate-600 mb-2">
+                Cộng đồng hỏi đáp nơi @Model.TotalQuestions câu hỏi và @Model.TotalAnswers câu trả lời đã được chia sẻ.
+            </p>
+            <p class="text-[11px] text-slate-500">
+                Đóng góp thêm để giúp số liệu này tiếp tục tăng!
+            </p>
+        </section>
+
+        <section class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-800 mb-3">Chủ đề phổ biến</h2>
+            <div class="flex flex-wrap gap-1 text-[11px]">
+                @foreach (var tag in Model.PopularTags)
+                {
+                    <a asp-controller="Questions" asp-action="Index" asp-route-tag="@tag.Name"
+                       class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 hover:bg-slate-200 flex items-center gap-1">
+                        <span>@tag.Name</span>
+                        <span class="text-[10px] text-slate-500">@tag.QuestionCount</span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <section class="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-amber-900 mb-3">Tips đặt câu hỏi hay</h2>
+            <ol class="list-decimal list-inside text-xs text-amber-900 space-y-1">
+                <li>Viết tiêu đề rõ ràng, súc tích.</li>
+                <li>Đưa ví dụ code tối thiểu có thể chạy.</li>
+                <li>Nêu rõ bạn đã thử những gì.</li>
+                <li>Đính kèm thông tin môi trường (OS, phiên bản .NET, DB...).</li>
+            </ol>
+        </section>
+    </div>
+</aside>
+

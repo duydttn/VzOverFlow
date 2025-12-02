@@ -1,0 +1,35 @@
+﻿@model VzOverFlow.Models.ViewModels.UserProfileViewModel
+@{
+    var thresholds = new[] { 15, 75, 200, 500, 1000, 2000 };
+    var next = thresholds.FirstOrDefault(t => t > Model.Reputation);
+    var previous = thresholds.LastOrDefault(t => t <= Model.Reputation);
+    var progress = next == 0
+        ? 1
+        : Math.Clamp((double)(Model.Reputation - previous) / (next - previous), 0, 1);
+    var nextLabel = next == 0 ? "Đã đạt tất cả đặc quyền" : $"Cần {next - Model.Reputation} điểm nữa";
+}
+
+<div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-xs">
+    <div class="flex items-center justify-between mb-3">
+        <div>
+            <div class="text-[11px] text-slate-500">Reputation hiện tại</div>
+            <div class="text-2xl font-semibold text-amber-600">@Model.Reputation</div>
+        </div>
+        <div class="rounded-full bg-amber-50 px-3 py-1 text-amber-800 text-[11px] font-medium flex items-center gap-1">
+            <span>⭐</span> @((Model.Reputation >= 500) ? "Thành viên kỳ cựu" : "Đang thăng hạng")
+        </div>
+    </div>
+
+    <div class="mt-2">
+        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+            <span>Tiến tới đặc quyền tiếp theo</span>
+            <span>@nextLabel</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full bg-amber-400" style="width:@(progress * 100)%"></div>
+        </div>
+        <p class="mt-2 text-[11px] text-slate-500">
+            Bạn đã đặt @Model.QuestionCount câu hỏi, trả lời @Model.AnswerCount lần và vote @Model.VoteCount lần.
+        </p>
+    </div>
+</div>

@@ -1,0 +1,82 @@
+﻿@model IEnumerable<VzOverFlow.Models.ViewModels.UserProfileViewModel>
+@{
+    ViewData["Title"] = "Bảng xếp hạng";
+}
+
+<div class="mb-6 flex items-start justify-between gap-4">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-1">
+            Bảng xếp hạng
+        </h1>
+        <p class="text-sm text-slate-600">
+            Top thành viên theo reputation và mức độ đóng góp.
+        </p>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bg-white border border-slate-200 rounded-lg p-4 text-sm text-slate-600">
+        Chưa có dữ liệu bảng xếp hạng (demo).
+    </div>
+}
+else
+{
+    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm mb-4">
+        <h2 class="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            🏆 Top 3
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            @foreach (var (user, idx) in Model.Take(3).Select((u,i)=>(u,i)))
+            {
+                <div class="border border-amber-200 rounded-lg p-3 bg-amber-50">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">@((idx==0) ? "🥇" : idx==1 ? "🥈" : "🥉")</span>
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900">@user.UserName</div>
+                                <div class="text-[11px] text-slate-500">@user.Email</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500">Reputation</div>
+                            <div class="text-lg font-semibold text-amber-700">@user.Reputation</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-xs">
+        <h2 class="text-sm font-semibold text-slate-800 mb-3">Tất cả top users</h2>
+        <table class="w-full text-left border-collapse">
+            <thead class="border-b border-slate-200 text-[11px] text-slate-500">
+                <tr>
+                    <th class="py-2 pr-2">#</th>
+                    <th class="py-2 pr-2">Người dùng</th>
+                    <th class="py-2 pr-2">Câu hỏi</th>
+                    <th class="py-2 pr-2">Trả lời</th>
+                    <th class="py-2 pr-2 text-right">Reputation</th>
+                </tr>
+            </thead>
+            <tbody class="text-[11px]">
+                @foreach (var (u, idx) in Model.Select((u,i)=>(u,i+1)))
+                {
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="py-1 pr-2">@idx</td>
+                        <td class="py-1 pr-2">
+                            <a asp-controller="Users" asp-action="Profile" asp-route-id="@u.Id"
+                               class="text-slate-800 hover:underline">
+                                @u.UserName
+                            </a>
+                        </td>
+                        <td class="py-1 pr-2">@u.QuestionCount</td>
+                        <td class="py-1 pr-2">@u.AnswerCount</td>
+                        <td class="py-1 pr-2 text-right font-semibold">@u.Reputation</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

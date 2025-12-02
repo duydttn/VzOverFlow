@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Xác thực OTP";
+}
+
+<div class="max-w-sm mx-auto bg-white border border-slate-200 rounded-lg p-6 shadow-sm text-sm">
+    <h1 class="text-xl font-semibold text-slate-900 mb-3">Nhập mã OTP</h1>
+    <p class="text-slate-600 mb-4">
+        Chúng tôi đã gửi mã OTP tới email của bạn. Vui lòng nhập mã để tiếp tục đăng nhập.
+    </p>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            @ViewBag.Error
+        </div>
+    }
+
+    <form method="post" asp-action="VerifyLoginOtp" class="space-y-3">
+        @Html.AntiForgeryToken()
+        <div>
+            <label class="block text-slate-700 mb-1">Mã OTP</label>
+            <input name="code" maxlength="6"
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <button type="submit"
+                class="w-full rounded-md bg-blue-600 text-white py-2 hover:bg-blue-700 transition-colors">
+            Xác nhận
+        </button>
+    </form>
+</div>
+

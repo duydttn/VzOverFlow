@@ -1,0 +1,29 @@
+﻿@model VzOverFlow.Models.Answer
+@{
+    ViewData["Title"] = "Trả lời câu hỏi";
+}
+
+<h1 class="text-2xl font-semibold text-slate-900 mb-4">Trả lời câu hỏi</h1>
+
+<form asp-action="Create" method="post" class="space-y-4 bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="questionId" value="@ViewBag.QuestionId" />
+
+    <div>
+        <label asp-for="Body" class="block text-sm font-semibold text-slate-800 mb-1">
+            Nội dung câu trả lời
+        </label>
+        <textarea asp-for="Body" rows="10"
+                  class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+        <span asp-validation-for="Body" class="text-xs text-red-500"></span>
+    </div>
+
+    <div class="flex justify-between items-center">
+        <a asp-controller="Questions" asp-action="Details" asp-route-id="@ViewBag.QuestionId"
+           class="text-xs text-slate-500 hover:text-slate-700">Quay lại câu hỏi</a>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-4 py-2 hover:bg-blue-700 shadow-sm">
+            Đăng câu trả lời
+        </button>
+    </div>
+</form>
