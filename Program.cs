@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VzOverFlow.Data;
@@ -9,7 +8,7 @@ namespace VzOverFlow
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -18,19 +17,29 @@ namespace VzOverFlow
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
+                {
+                    options.Password.RequiredLength = 6;
+                    options.Password.RequireDigit = true;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.User.RequireUniqueEmail = false;
+                })
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = "/users/login";
+                options.AccessDeniedPath = "/users/login";
+            });
+
             builder.Services.AddScoped<IQuestionService, QuestionService>();
             builder.Services.AddScoped<IUserService, UserService>();
-            builder.Services.AddScoped<PasswordHasher<User>>();
             builder.Services.AddScoped<ITwoFactorService, TwoFactorService>();
             builder.Services.AddScoped<IEmailSender, GmailEmailSender>();
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-
-            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options =>
-                {
-                    options.LoginPath = "/users/login";
-                    options.AccessDeniedPath = "/users/login";
-                });
 
             var app = builder.Build();
 
@@ -39,6 +48,7 @@ namespace VzOverFlow
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+            app.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
 
             app.UseHttpsRedirection();
             app.UseRouting();
@@ -50,8 +60,8 @@ namespace VzOverFlow
             {
                 var services = scope.ServiceProvider;
                 var context = services.GetRequiredService<AppDbContext>();
-                context.Database.Migrate();
-                SeedData.Initialize(services);
+                await context.Database.MigrateAsync();
+                await SeedData.InitializeAsync(services);
             }
 
             app.MapStaticAssets();
@@ -60,7 +70,7 @@ namespace VzOverFlow
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

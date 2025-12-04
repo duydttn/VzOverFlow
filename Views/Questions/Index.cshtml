@@ -19,7 +19,6 @@
     </a>
 </div>
 
-<!-- Form search riêng cho trang câu hỏi -->
 <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
     <input name="search"
            value="@Model.Search"
@@ -35,7 +34,6 @@
     </button>
 </form>
 
-<!-- Reuse giống Home -->
 <div class="space-y-3">
     @foreach (var q in Model.Questions)
     {

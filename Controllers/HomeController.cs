@@ -93,9 +93,33 @@ namespace VzOverFlow.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public IActionResult Error(int? statusCode = null)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var viewModel = new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            };
+
+            if (statusCode.HasValue)
+            {
+                if (statusCode == 404)
+                {
+                    ViewBag.ErrorTitle = "404 - Not Found";
+                    ViewBag.ErrorMessage = "Trang bạn tìm kiếm không tồn tại hoặc đã bị xóa.";
+                }
+                else
+                {
+                    ViewBag.ErrorTitle = $"Error {statusCode}";
+                    ViewBag.ErrorMessage = "Đã xảy ra lỗi khi xử lý yêu cầu của bạn.";
+                }
+            }
+            else
+            {
+                ViewBag.ErrorTitle = "500 - Server Error";
+                ViewBag.ErrorMessage = "Hệ thống gặp sự cố bất ngờ. Đội ngũ kỹ thuật đang khắc phục.";
+            }
+
+            return View(viewModel);
         }
 
         private static List<BadgeStatusViewModel> BuildBadges(UserProfileViewModel profile)

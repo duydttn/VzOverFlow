@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using VzOverFlow.Models;
@@ -7,16 +9,22 @@ namespace VzOverFlow.Data
 {
     public static class SeedData
     {
-        public static void Initialize(IServiceProvider serviceProvider)
+        public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
             var context = serviceProvider.GetRequiredService<AppDbContext>();
-
-            if (context.Users.Any())
+            if (await context.Users.AnyAsync())
             {
                 return;
             }
 
-            var passwordHasher = new PasswordHasher<User>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
+
+            const string adminRoleName = "Admin";
+            if (!await roleManager.RoleExistsAsync(adminRoleName))
+            {
+                await roleManager.CreateAsync(new IdentityRole<int>(adminRoleName));
+            }
 
             var admin = new User
             {
@@ -26,7 +34,8 @@ namespace VzOverFlow.Data
                 CreatedAt = DateTime.UtcNow.AddMonths(-2),
                 TwoFactorEnabled = true
             };
-            admin.PasswordHash = passwordHasher.HashPassword(admin, "Admin@123");
+            await userManager.CreateAsync(admin, "Admin@123");
+            await userManager.AddToRoleAsync(admin, adminRoleName);
 
             var member = new User
             {
@@ -36,7 +45,7 @@ namespace VzOverFlow.Data
                 CreatedAt = DateTime.UtcNow.AddMonths(-1),
                 TwoFactorEnabled = false
             };
-            member.PasswordHash = passwordHasher.HashPassword(member, "Member@123");
+            await userManager.CreateAsync(member, "Member@123");
 
             var tags = new[]
             {
@@ -64,10 +73,9 @@ namespace VzOverFlow.Data
                 }
             };
 
-            context.Users.AddRange(admin, member);
-            context.Tags.AddRange(tags);
-            context.Questions.Add(question);
-            context.SaveChanges();
+            await context.Tags.AddRangeAsync(tags);
+            await context.Questions.AddAsync(question);
+            await context.SaveChangesAsync();
         }
     }
 }

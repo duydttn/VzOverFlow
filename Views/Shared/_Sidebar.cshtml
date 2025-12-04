@@ -29,6 +29,13 @@
            class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "Users" && currentAction == "Index")">
             Người dùng
         </a>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-controller="AdminUsers" asp-action="Index"
+               class="flex items-center gap-2 px-3 py-2 rounded-md @ActiveClass(currentController == "AdminUsers")">
+                Admin: Quản lý user
+            </a>
+        }
         @if (!string.IsNullOrEmpty(currentUserId))
         {
             <a asp-controller="Users" asp-action="Profile" asp-route-id="@currentUserId"

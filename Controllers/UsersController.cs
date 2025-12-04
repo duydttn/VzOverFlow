@@ -1,13 +1,11 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using VzOverFlow.Data;
 using VzOverFlow.Models;
 using VzOverFlow.Models.ViewModels;
 using VzOverFlow.Services;
@@ -18,19 +16,19 @@ namespace VzOverFlow.Controllers
     public class UsersController : Controller
     {
         private readonly IUserService _userService;
-        private readonly AppDbContext _context;
-        private readonly PasswordHasher<User> _passwordHasher;
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
         private readonly ITwoFactorService _twoFactorService;
 
         public UsersController(
             IUserService userService,
-            AppDbContext context,
-            PasswordHasher<User> passwordHasher,
+            UserManager<User> userManager,
+            SignInManager<User> signInManager,
             ITwoFactorService twoFactorService)
         {
             _userService = userService;
-            _context = context;
-            _passwordHasher = passwordHasher;
+            _userManager = userManager;
+            _signInManager = signInManager;
             _twoFactorService = twoFactorService;
         }
 
@@ -57,7 +55,7 @@ namespace VzOverFlow.Controllers
         [Authorize]
         public async Task<IActionResult> AccountSettings()
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -84,13 +82,13 @@ namespace VzOverFlow.Controllers
                 return View("SettingsAccount", model);
             }
 
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var userNameExists = await _context.Users
+            var userNameExists = await _userManager.Users
                 .AnyAsync(u => u.Id != user.Id && u.UserName == model.UserName);
 
             if (userNameExists)
@@ -100,7 +98,7 @@ namespace VzOverFlow.Controllers
 
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
-                var emailExists = await _context.Users
+                var emailExists = await _userManager.Users
                     .AnyAsync(u => u.Id != user.Id && u.Email == model.Email);
 
                 if (emailExists)
@@ -116,7 +114,13 @@ namespace VzOverFlow.Controllers
 
             user.UserName = model.UserName.Trim();
             user.Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim();
-            await _context.SaveChangesAsync();
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                AddErrors(result);
+                return View("SettingsAccount", model);
+            }
 
             TempData["AccountStatusMessage"] = "Đã cập nhật thông tin tài khoản.";
             return RedirectToAction(nameof(AccountSettings));
@@ -126,7 +130,7 @@ namespace VzOverFlow.Controllers
         [Authorize]
         public async Task<IActionResult> SecuritySettings()
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -147,36 +151,49 @@ namespace VzOverFlow.Controllers
         [AllowAnonymous]
         public IActionResult Register()
         {
-            return View(new User());
+            return View(new RegisterViewModel());
         }
 
         [HttpPost("register")]
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
-        public async Task<IActionResult> Register(User user)
+        public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (await _context.Users.AnyAsync(u => u.UserName == user.UserName))
-            {
-                ModelState.AddModelError(nameof(VzOverFlow.Models.User.UserName), "Tên người dùng đã tồn tại.");
-            }
-
-            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-            {
-                ModelState.AddModelError(nameof(VzOverFlow.Models.User.Email), "Email đã được sử dụng.");
-            }
-
             if (!ModelState.IsValid)
             {
-                return View(user);
+                return View(model);
             }
 
-            var plainPassword = user.PasswordHash;
-            user.CreatedAt = DateTime.UtcNow;
-            user.PasswordHash = _passwordHasher.HashPassword(user, plainPassword);
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var userName = model.UserName.Trim();
+            var email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim();
 
-            await SignInUserAsync(user);
+            if (await _userManager.Users.AnyAsync(u => u.UserName == userName))
+            {
+                ModelState.AddModelError(nameof(RegisterViewModel.UserName), "Tên người dùng đã tồn tại.");
+                return View(model);
+            }
+
+            if (!string.IsNullOrEmpty(email) && await _userManager.Users.AnyAsync(u => u.Email == email))
+            {
+                ModelState.AddModelError(nameof(RegisterViewModel.Email), "Email đã được sử dụng.");
+                return View(model);
+            }
+
+            var user = new User
+            {
+                UserName = userName,
+                Email = email,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                AddErrors(result);
+                return View(model);
+            }
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
             return RedirectToAction(nameof(Profile), new { id = user.Id });
         }
 
@@ -184,33 +201,33 @@ namespace VzOverFlow.Controllers
         [AllowAnonymous]
         public IActionResult Login()
         {
-            return View();
+            return View(new LoginViewModel());
         }
 
         [HttpPost("login")]
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (!ModelState.IsValid)
             {
-                ViewBag.Error = "Vui lòng nhập đầy đủ thông tin đăng nhập.";
-                return View();
+                return View(model);
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.UserName == username || u.Email == username);
+            var identifier = model.UserNameOrEmail.Trim();
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.UserName == identifier || u.Email == identifier);
             if (user == null)
             {
                 ViewBag.Error = "Thông tin đăng nhập không chính xác.";
-                return View();
+                return View(model);
             }
 
-            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-            if (result == PasswordVerificationResult.Failed)
+            var passwordValid = await _userManager.CheckPasswordAsync(user, model.Password);
+            if (!passwordValid)
             {
                 ViewBag.Error = "Thông tin đăng nhập không chính xác.";
-                return View();
+                return View(model);
             }
 
             if (user.TwoFactorEnabled)
@@ -220,7 +237,12 @@ namespace VzOverFlow.Controllers
                 return RedirectToAction(nameof(VerifyLoginOtp));
             }
 
-            await SignInUserAsync(user);
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            if (await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                return RedirectToAction("Index", "AdminUsers");
+            }
+
             return RedirectToAction(nameof(Profile), new { id = user.Id });
         }
 
@@ -243,26 +265,26 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> VerifyLoginOtp(string code)
         {
-            var userId = TempData["TwoFactorUserId"]?.ToString();
-            if (string.IsNullOrEmpty(userId))
+            var userIdValue = TempData["TwoFactorUserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdValue))
             {
                 return RedirectToAction(nameof(Login));
             }
 
-            if (!await _twoFactorService.ValidateCodeAsync(int.Parse(userId), OtpPurpose.Login, code))
+            if (!await _twoFactorService.ValidateCodeAsync(int.Parse(userIdValue), OtpPurpose.Login, code))
             {
                 TempData["TwoFactorError"] = "Mã OTP không hợp lệ hoặc đã hết hạn.";
                 TempData.Keep("TwoFactorUserId");
                 return RedirectToAction(nameof(VerifyLoginOtp));
             }
 
-            var user = await _context.Users.FindAsync(int.Parse(userId));
+            var user = await _userManager.FindByIdAsync(userIdValue);
             if (user == null)
             {
                 return RedirectToAction(nameof(Login));
             }
 
-            await SignInUserAsync(user);
+            await _signInManager.SignInAsync(user, isPersistent: false);
             TempData.Remove("TwoFactorUserId");
             return RedirectToAction(nameof(Profile), new { id = user.Id });
         }
@@ -272,7 +294,7 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _signInManager.SignOutAsync();
             return RedirectToAction(nameof(Login));
         }
 
@@ -281,7 +303,7 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestTwoFactorCode(string mode)
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -290,7 +312,7 @@ namespace VzOverFlow.Controllers
             var purpose = mode == "disable" ? OtpPurpose.DisableTwoFactor : OtpPurpose.EnableTwoFactor;
             await _twoFactorService.GenerateAndSendAsync(user, purpose);
             TempData["StatusMessage"] = "Mã OTP đã được gửi đến email của bạn.";
-            return RedirectToAction(nameof(Security));
+            return RedirectToAction(nameof(SecuritySettings));
         }
 
         [HttpPost("twofactor/enable")]
@@ -298,7 +320,7 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnableTwoFactor(string code)
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -307,13 +329,13 @@ namespace VzOverFlow.Controllers
             if (!await _twoFactorService.ValidateCodeAsync(user.Id, OtpPurpose.EnableTwoFactor, code))
             {
                 TempData["StatusMessage"] = "Mã OTP không hợp lệ.";
-                return RedirectToAction(nameof(Security));
+                return RedirectToAction(nameof(SecuritySettings));
             }
 
             user.TwoFactorEnabled = true;
-            await _context.SaveChangesAsync();
+            await _userManager.UpdateAsync(user);
             TempData["StatusMessage"] = "Đã bật bảo mật 2 lớp.";
-            return RedirectToAction(nameof(Security));
+            return RedirectToAction(nameof(SecuritySettings));
         }
 
         [HttpPost("twofactor/disable")]
@@ -321,7 +343,7 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DisableTwoFactor(string code)
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -330,13 +352,13 @@ namespace VzOverFlow.Controllers
             if (!await _twoFactorService.ValidateCodeAsync(user.Id, OtpPurpose.DisableTwoFactor, code))
             {
                 TempData["StatusMessage"] = "Mã OTP không hợp lệ.";
-                return RedirectToAction(nameof(Security));
+                return RedirectToAction(nameof(SecuritySettings));
             }
 
             user.TwoFactorEnabled = false;
-            await _context.SaveChangesAsync();
+            await _userManager.UpdateAsync(user);
             TempData["StatusMessage"] = "Đã tắt bảo mật 2 lớp.";
-            return RedirectToAction(nameof(Security));
+            return RedirectToAction(nameof(SecuritySettings));
         }
 
         [HttpPost("password/request-otp")]
@@ -344,7 +366,7 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestChangePasswordOtp()
         {
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
@@ -352,7 +374,7 @@ namespace VzOverFlow.Controllers
 
             await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.ChangePassword);
             TempData["StatusMessage"] = "Mã OTP đổi mật khẩu đã được gửi.";
-            return RedirectToAction(nameof(Security));
+            return RedirectToAction(nameof(SecuritySettings));
         }
 
         [HttpPost("password/change")]
@@ -363,19 +385,19 @@ namespace VzOverFlow.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["StatusMessage"] = "Thông tin đổi mật khẩu chưa hợp lệ.";
-                return RedirectToAction(nameof(Security));
+                return RedirectToAction(nameof(SecuritySettings));
             }
 
-            var user = await _context.Users.FindAsync(GetCurrentUserId());
+            var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return NotFound();
             }
 
-            if (_passwordHasher.VerifyHashedPassword(user, user.PasswordHash, model.OldPassword) == PasswordVerificationResult.Failed)
+            if (!await _userManager.CheckPasswordAsync(user, model.OldPassword))
             {
                 TempData["StatusMessage"] = "Mật khẩu cũ không đúng.";
-                return RedirectToAction(nameof(Security));
+                return RedirectToAction(nameof(SecuritySettings));
             }
 
             if (user.TwoFactorEnabled)
@@ -384,32 +406,24 @@ namespace VzOverFlow.Controllers
                 if (!valid)
                 {
                     TempData["StatusMessage"] = "Mã OTP đổi mật khẩu không hợp lệ.";
-                    return RedirectToAction(nameof(Security));
+                    return RedirectToAction(nameof(SecuritySettings));
                 }
             }
 
-            user.PasswordHash = _passwordHasher.HashPassword(user, model.NewPassword);
-            await _context.SaveChangesAsync();
-            TempData["StatusMessage"] = "Đổi mật khẩu thành công.";
-            return RedirectToAction(nameof(Security));
+            var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+            TempData["StatusMessage"] = result.Succeeded
+                ? "Đổi mật khẩu thành công."
+                : string.Join("; ", result.Errors.Select(e => e.Description));
+            return RedirectToAction(nameof(SecuritySettings));
         }
 
-        private async Task SignInUserAsync(User user)
+        private void AddErrors(IdentityResult result)
         {
-            var claims = new[]
+            foreach (var error in result.Errors)
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName)
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                ModelState.AddModelError(string.Empty, error.Description);
+        }
         }
 
-        private int GetCurrentUserId()
-        {
-            return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        }
     }
 }

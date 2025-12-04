@@ -1,4 +1,4 @@
-﻿@model VzOverFlow.Models.User
+﻿@model VzOverFlow.Models.ViewModels.RegisterViewModel
 @{
     ViewData["Title"] = "Đăng ký";
     Layout = "_AuthLayout";
@@ -28,9 +28,10 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
-            <input name="PasswordHash" type="password"
+            <label asp-for="Password" class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
+            <input asp-for="Password" type="password"
                    class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus-border-blue-500" />
+            <span asp-validation-for="Password" class="text-xs text-red-500"></span>
         </div>
 
         <button type="submit"

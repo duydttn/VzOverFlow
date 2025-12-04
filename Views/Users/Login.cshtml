@@ -1,4 +1,5 @@
-﻿@{
+﻿@model VzOverFlow.Models.ViewModels.LoginViewModel
+@{
     ViewData["Title"] = "Đăng nhập";
     Layout = "_AuthLayout";
 }
@@ -18,18 +19,21 @@
 
     <form asp-action="Login" method="post" class="space-y-4">
         @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-xs text-red-500"></div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-800 mb-1">Tên đăng nhập hoặc email</label>
-            <input name="username"
+            <label asp-for="UserNameOrEmail" class="block text-sm font-medium text-slate-800 mb-1">Tên đăng nhập hoặc email</label>
+            <input asp-for="UserNameOrEmail"
                    class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                    placeholder="username hoặc email" />
+            <span asp-validation-for="UserNameOrEmail" class="text-xs text-red-500"></span>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
-            <input name="password" type="password"
+            <label asp-for="Password" class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
+            <input asp-for="Password" type="password"
                    class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+            <span asp-validation-for="Password" class="text-xs text-red-500"></span>
         </div>
 
         <button type="submit"

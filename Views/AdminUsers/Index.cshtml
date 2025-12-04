@@ -1,0 +1,41 @@
+@model IEnumerable<VzOverFlow.Models.User>
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold text-slate-900">
+        Quản lý người dùng
+    </h1>
+    <span class="text-xs text-slate-500">
+        Chỉ Admin mới truy cập được trang này
+    </span>
+</div>
+
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th class="px-4 py-2 text-left">Id</th>
+                <th class="px-4 py-2 text-left">UserName</th>
+                <th class="px-4 py-2 text-left">Email</th>
+                <th class="px-4 py-2 text-left">Reputation</th>
+                <th class="px-4 py-2 text-left">Ngày tạo</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+        @foreach (var u in Model)
+        {
+            <tr class="hover:bg-slate-50">
+                <td class="px-4 py-2">@u.Id</td>
+                <td class="px-4 py-2">@u.UserName</td>
+                <td class="px-4 py-2">@u.Email</td>
+                <td class="px-4 py-2">@u.Reputation</td>
+                <td class="px-4 py-2">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+

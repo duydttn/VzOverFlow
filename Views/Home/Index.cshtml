@@ -20,7 +20,6 @@
     </a>
 </div>
 
-<!-- Tabs lọc (demo, chỉ thay đổi query string "sort") -->
 <div class="mb-4 flex flex-wrap items-center gap-2 text-xs">
     @{
         string? currentSort = Context?.Request?.Query["sort"].ToString();
@@ -45,7 +44,6 @@
     </a>
 </div>
 
-<!-- Danh sách câu hỏi -->
 <div class="space-y-3">
     @foreach (var q in Model.Questions)
     {
