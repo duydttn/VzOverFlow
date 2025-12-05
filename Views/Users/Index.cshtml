@@ -13,6 +13,25 @@
             Khám phá những thành viên đang đóng góp nhiều cho cộng đồng VzOverFlow.
         </p>
     </div>
+    @* <div class="flex items-center gap-3">
+        <!-- Avatar and Username -->
+        <div class="flex items-center gap-2">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" alt="Admin" class="h-8 w-8 rounded-full" />
+            <span class="text-sm font-semibold text-slate-900">Admin</span>
+        </div>
+        <!-- Settings Icon -->
+        <a asp-controller="Settings" class="text-slate-500 hover:text-slate-900 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M12 8v8m4-4H8" />
+            </svg>
+        </a>
+        <!-- Logout Icon -->
+        <a asp-controller="Account" asp-action="Logout" class="text-slate-500 hover:text-slate-900 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M17 16l4 4m0 0l-4 4m4-4H3m5-4a2 2 0 110-4 2 2 0 010 4zm2 4h6" />
+            </svg>
+        </a>
+    </div> *@
 </div>
 
 <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
@@ -39,14 +58,13 @@ else
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         @foreach (var u in Model)
         {
+            var avatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={u.UserName}";
             <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-blue-500 transition-colors text-xs">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="h-10 w-10 rounded-full bg-slate-800 text-white flex items-center justify-center text-sm font-semibold">
-                        @(string.IsNullOrEmpty(u.UserName) ? "U" : u.UserName.Substring(0, 1).ToUpper())
-                    </div>
+                    <img src="@avatarUrl" alt="@u.UserName" class="h-7 w-7 rounded-full" />
                     <div>
                         <a asp-action="Profile" asp-route-id="@u.Id"
-                           class="text-sm font-semibold text-slate-900 hover:underline">
+                           class="text-sm font-semibold text-slate-900 hover:underlinsse">
                             @u.UserName
                         </a>
                         <div class="text-[11px] text-slate-500">@u.Email</div>

@@ -7,94 +7,108 @@
 <head>
     <meta charset="utf-8" />
     <title>@ViewData["Title"] - VzOverFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/output.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/index.css" asp-append-version="true" />
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen">
     <header class="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur-sm shadow-sm">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex h-16 items-center justify-between gap-4">
-                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 group">
-                    <div class="bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold rounded-md h-8 w-8 flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all">
-                        Vz
-                    </div>
-                    <span class="font-semibold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">
-                        VzOverFlow
-                    </span>
-                </a>
+     <div class="flex h-16 items-center justify-between gap-4">
+       <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 group">
+          <div class="relative bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg h-9 w-9 flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all overflow-hidden">
+         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
+    </div>
+   <span class="font-semibold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">
+    VzOverFlow
+      </span>
+        </a>
 
-                <form asp-controller="Questions" asp-action="Index" method="get" class="flex-1 hidden md:flex items-center gap-2 max-w-xl">
-                    <div class="relative w-full">
-                        <input name="search"
-                               class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Tìm kiếm câu hỏi..." />
-                    </div>
-                </form>
+         <form asp-controller="Questions" asp-action="Index" method="get" class="flex-1 hidden md:flex items-center gap-2 max-w-xl">
+     <div class="relative w-full">
+  <input name="search"
+       class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  placeholder="Tìm kiếm câu hỏi..." />
+        </div>
+     </form>
 
-                <div class="flex items-center gap-2">
-                    <a asp-controller="Questions" asp-action="Create"
-                       class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-3 py-1.5 hover:bg-blue-700 transition-colors">
-                        <span class="font-medium">Đặt câu hỏi</span>
-                    </a>
+    <div class="flex items-center gap-2">
+     <a asp-controller="Questions" asp-action="Create"
+            class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-3 py-1.5 hover:bg-blue-700 transition-colors">
+           <span class="font-medium">Đặt câu hỏi</span>
+          </a>
 
-                    @if (User?.Identity?.IsAuthenticated ?? false)
-                    {
-                        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                        var userName = User.Identity?.Name ?? "User";
-                        var userInitial = string.IsNullOrWhiteSpace(userName) ? "U" : userName.Substring(0, 1).ToUpperInvariant();
+ @if (User?.Identity?.IsAuthenticated ?? false)
+         {
+   var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+           var userName = User.Identity?.Name ?? "User";
+      var avatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={userName}";
 
-                        <div class="flex items-center gap-2">
-                            <a asp-controller="Users" asp-action="Profile" asp-route-id="@userId"
-                               class="flex items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50 transition-colors">
-                                <div class="h-7 w-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-semibold">
-                                    @userInitial
-                                </div>
-                                <span class="hidden sm:inline text-slate-700">@userName</span>
-                            </a>
-                            <form asp-controller="Users" asp-action="Logout" method="post" class="inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit"
-                                        class="inline-flex items-center rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50 text-slate-700">
-                                    Đăng xuất
-                                </button>
-                            </form>
-                        </div>
-                    }
-                    else
-                    {
-                    <a asp-controller="Users" asp-action="Login"
-                       class="hidden sm:inline-flex items-center rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50">
-                        Đăng nhập
-                    </a>
-                    <a asp-controller="Users" asp-action="Register"
-                       class="inline-flex items-center rounded-md bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-800">
-                        Đăng ký
-                    </a>
-                    }
-                </div>
-            </div>
+         <div class="flex items-center gap-3">
+       <a asp-controller="Users" asp-action="Profile" asp-route-id="@userId"
+   class="flex items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50 transition-colors">
+                <img src="@avatarUrl" alt="@userName" class="h-7 w-7 rounded-full" />
+<span class="hidden sm:inline text-slate-700">@userName</span>
+       </a>
+        <a asp-controller="Users" asp-action="AccountSettings"
+  class="flex items-center justify-center rounded-md border border-slate-200 p-2 text-sm hover:bg-slate-50 transition-colors"
+   title="Cài đặt">
+       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        </a>
+ <form asp-controller="Users" asp-action="Logout" method="post" class="inline">
+       @Html.AntiForgeryToken()
+  <button type="submit"
+                 class="inline-flex items-center rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50 text-slate-700">
+              Đăng xuất
+         </button>
+       </form>
+    </div>
+ }
+         else
+        {
+  <a asp-controller="Users" asp-action="Login"
+        class="hidden sm:inline-flex items-center rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50">
+     Đăng nhập
+         </a>
+   <a asp-controller="Users" asp-action="Register"
+              class="inline-flex items-center rounded-md bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-800">
+             Đăng ký
+  </a>
+         }
+     </div>
+     </div>
         </div>
     </header>
 
     <div class="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">
-        <div class="grid grid-cols-12 gap-6">
+     <div class="grid grid-cols-12 gap-6">
             @await Html.PartialAsync("_Sidebar")
 
-            <main class="col-span-12 md:col-span-7 min-w-0">
+          <main class="col-span-12 md:col-span-7 min-w-0">
                 @RenderBody()
-            </main>
+    </main>
 
-            @await Component.InvokeAsync("RightSidebar")
-        </div>
+   @await Component.InvokeAsync("RightSidebar")
+      </div>
     </div>
 
     <footer class="border-t bg-white mt-auto">
-        <div class="max-w-6xl mx-auto px-4 py-4 text-xs text-slate-500 flex justify-between">
-            <span>© @DateTime.Now.Year VzOverFlow</span>
-            <span>Học hỏi cùng cộng đồng lập trình Việt</span>
+   <div class="max-w-6xl mx-auto px-4 py-4 text-xs text-slate-500 flex justify-between">
+   <span>© @DateTime.Now.Year VzOverFlow</span>
+    <span>Học hỏi cùng cộng đồng lập trình Việt</span>
         </div>
-    </footer>
+ </footer>
 
     <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

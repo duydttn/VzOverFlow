@@ -18,17 +18,20 @@ namespace VzOverFlow.Controllers
         private readonly IQuestionService _questionService;
         private readonly IUserService _userService;
         private readonly AppDbContext _context;
+        private readonly IGamificationService _gamificationService;
 
         public HomeController(
             ILogger<HomeController> logger,
             IQuestionService questionService,
             IUserService userService,
-            AppDbContext context)
+            AppDbContext context,
+            IGamificationService gamificationService)
         {
             _logger = logger;
             _questionService = questionService;
             _userService = userService;
             _context = context;
+            _gamificationService = gamificationService;
         }
 
         public async Task<IActionResult> Index(string? search, string? tag, string? sort)

@@ -1,22 +1,21 @@
 ﻿@model VzOverFlow.Models.ViewModels.UserProfileViewModel
 @{
     ViewData["Title"] = "Hồ sơ người dùng";
+    var avatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={Model.UserName}";
 }
 
 <div class="mb-6 flex items-start justify-between gap-4">
     <div class="flex items-center gap-4">
-        <div class="h-14 w-14 rounded-full bg-slate-800 text-white flex items-center justify-center text-xl font-semibold">
-            @(string.IsNullOrEmpty(Model.UserName) ? "U" : Model.UserName.Substring(0, 1).ToUpper())
-        </div>
-        <div>
+   <img src="@avatarUrl" alt="@Model.UserName" class="h-14 w-14 rounded-full" />
+  <div>
             <h1 class="text-2xl font-semibold text-slate-900 mb-1">
-                @Model.UserName
+    @Model.UserName
             </h1>
-            <div class="text-xs text-slate-600 space-x-2">
-                <span>@Model.Email</span>
-                <span>•</span>
-                <span>Tham gia từ @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-            </div>
+   <div class="text-xs text-slate-600 space-x-2">
+             <span>@Model.Email</span>
+        <span>•</span>
+    <span>Tham gia từ @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+        </div>
         </div>
     </div>
 

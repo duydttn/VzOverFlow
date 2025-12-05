@@ -16,21 +16,25 @@
         <div>
             <label asp-for="UserName" class="block text-sm font-medium text-slate-800 mb-1">Tên đăng nhập</label>
             <input asp-for="UserName"
-                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm foc?s:outline-none foc?s:ring-2 foc?s:ring-blue-500 foc?s:border-blue-500" />
             <span asp-validation-for="UserName" class="text-xs text-red-500"></span>
         </div>
 
         <div>
-            <label asp-for="Email" class="block text-sm font-medium text-slate-800 mb-1">Email</label>
-            <input asp-for="Email" type="email"
-                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus-border-blue-500" />
+            <label asp-for="Email" class="block text-sm font-medium text-slate-800 mb-1">
+                Email <span class="text-red-500">*</span>
+            </label>
+            <input asp-for="Email" type="email" required
+                   placeholder="your@email.com"
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm foc?s:outline-none foc?s:ring-2 foc?s:ring-blue-500 foc?s:border-blue-500" />
             <span asp-validation-for="Email" class="text-xs text-red-500"></span>
+            <p class="text-xs text-slate-500 mt-1">Email sẽ được dùng để nhận mã OTP khi đăng nhập</p>
         </div>
 
         <div>
             <label asp-for="Password" class="block text-sm font-medium text-slate-800 mb-1">Mật khẩu</label>
             <input asp-for="Password" type="password"
-                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus-border-blue-500" />
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm foc?s:outline-none foc?s:ring-2 foc?s:ring-blue-500 foc?s:border-blue-500" />
             <span asp-validation-for="Password" class="text-xs text-red-500"></span>
         </div>
 

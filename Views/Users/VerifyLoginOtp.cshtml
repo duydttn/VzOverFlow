@@ -1,31 +1,83 @@
-@{
-    ViewData["Title"] = "Xác thực OTP";
+﻿@{
+  ViewData["Title"] = "Xác thực đăng nhập";
 }
 
-<div class="max-w-sm mx-auto bg-white border border-slate-200 rounded-lg p-6 shadow-sm text-sm">
-    <h1 class="text-xl font-semibold text-slate-900 mb-3">Nhập mã OTP</h1>
+<div class="max-w-sm mx-auto bg-white border border-slate-200 rounded-lg p-6 shadow-sm text-sm font-sans">
+    <h1 class="text-xl font-semibold text-slate-900 mb-3">Xác thực đăng nhập</h1>
     <p class="text-slate-600 mb-4">
-        Chúng tôi đã gửi mã OTP tới email của bạn. Vui lòng nhập mã để tiếp tục đăng nhập.
+        Một mã OTP đã được gửi đến email: <strong class="text-slate-900">@ViewBag.Email</strong>
     </p>
+    <p class="text-xs text-slate-500 mb-4">
+ Vui lòng kiểm tra hộp thư đến (hoặc thư spam) và nhập mã 6 chữ số để hoàn tất đăng nhập.
+    </p>
+
+    @if (ViewBag.Info != null)
+    {
+   <div class="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+       @ViewBag.Info
+   </div>
+    }
 
     @if (ViewBag.Error != null)
     {
         <div class="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            @ViewBag.Error
-        </div>
+      @ViewBag.Error
+ </div>
     }
 
     <form method="post" asp-action="VerifyLoginOtp" class="space-y-3">
-        @Html.AntiForgeryToken()
+    @Html.AntiForgeryToken()
         <div>
-            <label class="block text-slate-700 mb-1">Mã OTP</label>
-            <input name="code" maxlength="6"
-                   class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <label class="block text-slate-700 mb-1 font-medium">Mã OTP</label>
+          <input name="otpCode" 
+      type="text"
+   maxlength="6" 
+         pattern="[0-9]{6}"
+     required 
+    autofocus
+ autocomplete="one-time-code"
+         placeholder="000000"
+   class="w-full rounded-md border border-slate-200 px-3 py-2 text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <p class="text-xs text-slate-500 mt-1 text-center">Mã có hiệu lực trong 5 phút</p>
         </div>
         <button type="submit"
-                class="w-full rounded-md bg-blue-600 text-white py-2 hover:bg-blue-700 transition-colors">
-            Xác nhận
-        </button>
+class="w-full rounded-md bg-blue-600 text-white py-2 font-medium hover:bg-blue-700 transition-colors">
+ Xác nhận
+ </button>
     </form>
+
+    <form method="post" asp-action="ResendLoginOtp" class="mt-3">
+   @Html.AntiForgeryToken()
+        <button type="submit"
+ class="w-full rounded-md border border-slate-300 bg-white text-slate-700 py-2 text-sm hover:bg-slate-50 transition-colors">
+       📧 Gửi lại mã OTP
+      </button>
+    </form>
+
+    <div class="mt-4 pt-4 border-t border-slate-200">
+ <p class="text-xs text-slate-600 mb-2">
+            <strong>Lưu ý:</strong> Nếu không nhận được mã:
+  </p>
+<ul class="text-xs text-slate-500 space-y-1 ml-4 list-disc">
+     <li>Kiểm tra thư mục spam/junk mail</li>
+       <li>Đảm bảo email của bạn chính xác</li>
+     <li>Đợi vài phút và thử gửi lại</li>
+  </ul>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-4 text-center">
+        Quay lại 
+        <a asp-action="Login" class="text-blue-600 hover:underline font-medium">trang đăng nhập</a>
+    </p>
 </div>
 
+<script>
+document.querySelector('input[name="otpCode"]').addEventListener('input', function(e) {
+        var value = e.target.value.replace(/\D/g, '');
+ e.target.value = value;
+ 
+   if (value.length === 6) {
+      e.target.form.submit();
+        }
+    });
+</script>

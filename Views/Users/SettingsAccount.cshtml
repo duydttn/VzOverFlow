@@ -1,4 +1,4 @@
-@model VzOverFlow.Models.ViewModels.AccountSettingsViewModel
+﻿@model VzOverFlow.Models.ViewModels.AccountSettingsViewModel
 @{
     ViewData["Title"] = "Cài đặt tài khoản";
 }
@@ -9,7 +9,7 @@
     <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
         <h1 class="text-2xl font-semibold text-slate-900 mb-2">Cài đặt tài khoản</h1>
         <p class="text-sm text-slate-600">
-            Quản lý thông tin đăng nhập, email nhận thông báo và tên hiển thị trên hồ sơ.
+            Quản lý thông tin đăng nhập, email nhận thông báo và Tên hiển thị trên hồ sơ.
         </p>
         @if (!string.IsNullOrEmpty(Model.StatusMessage))
         {
@@ -20,7 +20,7 @@
     </div>
 
     <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm text-sm space-y-4">
-        <h2 class="text-base font-semibold text-slate-900">Thông tin tài khoản</h2>
+        <h2 class="text-base font-semibold text-slate-900">thông tin tài khoản</h2>
         <form asp-action="AccountSettings" method="post" class="space-y-4">
             @Html.AntiForgeryToken()
             <div>
@@ -57,5 +57,3 @@
         <p>- Liên hệ quản trị viên nếu bạn muốn xoá tài khoản hoặc thay đổi thông tin khác.</p>
     </section>
 </div>
-
-

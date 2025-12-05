@@ -1,0 +1,140 @@
+@model VzOverFlow.Models.ViewModels.ReportListViewModel
+@{
+ ViewData["Title"] = "Quản lý báo cáo vi phạm";
+}
+
+<div class="max-w-7xl mx-auto py-6">
+  <div class="mb-6 flex items-center justify-between">
+<h1 class="text-3xl font-semibold text-slate-900">📋 Quản lý báo cáo vi phạm</h1>
+  <div class="flex items-center gap-2">
+  <span class="inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+         @Model.PendingCount báo cáo chờ xử lý
+      </span>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+     @TempData["SuccessMessage"]
+ </div>
+    }
+
+    <div class="mb-6 bg-white border border-slate-200 rounded-lg p-4">
+     <form method="get" class="flex items-center gap-3">
+       <label class="text-sm font-medium text-slate-700">Lọc theo trạng thái:</label>
+     <select name="status" onchange="this.form.submit()" 
+     class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
+       <option value="">Tất cả (@Model.TotalCount)</option>
+    <option value="0" selected="@(Model.FilterStatus == VzOverFlow.Models.ReportStatus.Pending)">
+      Chờ xử lý
+      </option>
+   <option value="1" selected="@(Model.FilterStatus == VzOverFlow.Models.ReportStatus.UnderReview)">
+  Đang xem xét
+       </option>
+     <option value="2" selected="@(Model.FilterStatus == VzOverFlow.Models.ReportStatus.ResolvedValid)">
+         Đã giải quyết - Hợp lệ
+  </option>
+   <option value="3" selected="@(Model.FilterStatus == VzOverFlow.Models.ReportStatus.ResolvedInvalid)">
+        Đã giải quyết - Không hợp lệ
+     </option>
+    <option value="4" selected="@(Model.FilterStatus == VzOverFlow.Models.ReportStatus.Dismissed)">
+     Đã bỏ qua
+  </option>
+        </select>
+        </form>
+    </div>
+
+    @if (!Model.Reports.Any())
+  {
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-8 text-center">
+      <p class="text-slate-600">Không có báo cáo nào.</p>
+        </div>
+    }
+    else
+    {
+ <div class="space-y-4">
+      @foreach (var report in Model.Reports)
+      {
+     var statusColor = report.Status switch
+ {
+     VzOverFlow.Models.ReportStatus.Pending => "bg-yellow-100 text-yellow-800",
+            VzOverFlow.Models.ReportStatus.UnderReview => "bg-blue-100 text-blue-800",
+          VzOverFlow.Models.ReportStatus.ResolvedValid => "bg-green-100 text-green-800",
+                VzOverFlow.Models.ReportStatus.ResolvedInvalid => "bg-slate-100 text-slate-800",
+      _ => "bg-slate-100 text-slate-600"
+       };
+
+     var reasonIcon = report.Reason switch
+    {
+VzOverFlow.Models.ReportReason.Spam => "🚫",
+       VzOverFlow.Models.ReportReason.Inappropriate => "⚠️",
+  VzOverFlow.Models.ReportReason.HateSpeech => "😡",
+      VzOverFlow.Models.ReportReason.Misinformation => "❌",
+           VzOverFlow.Models.ReportReason.Copyright => "📄",
+           VzOverFlow.Models.ReportReason.Duplicate => "🔄",
+    _ => "📝"
+       };
+
+       <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-start justify-between gap-4 mb-3">
+         <div class="flex-1">
+  <div class="flex items-center gap-2 mb-2">
+   <span class="text-lg">@reasonIcon</span>
+              <h3 class="text-sm font-semibold text-slate-900">
+      @report.Reason.ToString()
+       </h3>
+                  <span class="inline-flex items-center rounded-full @statusColor px-2 py-0.5 text-xs font-medium">
+      @report.Status.ToString()
+       </span>
+            </div>
+       
+        @if (report.QuestionId.HasValue)
+          {
+    <p class="text-xs text-slate-600 mb-1">
+     <strong>Câu hỏi:</strong>
+   <a asp-controller="Questions" asp-action="Details" asp-route-id="@report.QuestionId" 
+        class="text-blue-600 hover:underline" target="_blank">
+ @report.QuestionTitle
+   </a>
+           </p>
+      }
+          else if (report.AnswerId.HasValue)
+        {
+      <p class="text-xs text-slate-600 mb-1">
+        <strong>Câu trả lời ID:</strong> @report.AnswerId
+ </p>
+}
+
+     @if (!string.IsNullOrEmpty(report.ContentPreview))
+  {
+        <p class="text-xs text-slate-500 mt-2 italic">@report.ContentPreview</p>
+   }
+      </div>
+
+     <div class="text-right text-xs text-slate-500">
+      <p>Báo cáo bởi: <strong>@report.ReporterName</strong></p>
+    <p>@report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+         </div>
+     </div>
+
+        @if (!string.IsNullOrEmpty(report.Details))
+   {
+       <div class="bg-slate-50 rounded p-3 mb-3">
+      <p class="text-xs text-slate-700">
+    <strong>Chi tiết:</strong> @report.Details
+            </p>
+       </div>
+   }
+
+        <div class="flex gap-2">
+<a asp-action="Details" asp-route-id="@report.Id" 
+       class="inline-flex items-center gap-1 rounded-md bg-blue-600 text-white px-3 py-1.5 text-xs hover:bg-blue-700">
+    Xem chi tiết & Xử lý
+   </a>
+  </div>
+      </div>
+            }
+ </div>
+    }
+</div>

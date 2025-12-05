@@ -7,6 +7,10 @@
 <head>
     <meta charset="utf-8" />
     <title>@ViewData["Title"] - VzOverFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/output.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/index.css" asp-append-version="true" />
 </head>
@@ -15,8 +19,11 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex h-16 items-center justify-between gap-4">
                 <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 group">
-                    <div class="bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold rounded-md h-8 w-8 flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all">
-                        Vz
+                    <div class="relative bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg h-9 w-9 flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all overflow-hidden">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
                     </div>
                     <span class="font-semibold text-lg text-slate-800 group-hover:text-blue-600 transition-colors">
                         VzOverFlow

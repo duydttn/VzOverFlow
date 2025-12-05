@@ -38,7 +38,11 @@ namespace VzOverFlow
             builder.Services.AddScoped<IQuestionService, QuestionService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<ITwoFactorService, TwoFactorService>();
+            builder.Services.AddScoped<IAuthenticatorService, AuthenticatorService>();
             builder.Services.AddScoped<IEmailSender, GmailEmailSender>();
+            builder.Services.AddScoped<IReportService, ReportService>();
+            builder.Services.AddScoped<IGamificationService, GamificationService>();
+            builder.Services.AddScoped<IVoteService, VoteService>();
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
             var app = builder.Build();

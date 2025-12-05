@@ -13,10 +13,14 @@ namespace VzOverFlow.Controllers
     public class QuestionsController : Controller
     {
         private readonly IQuestionService _questionService;
+        private readonly IGamificationService _gamificationService;
+        private readonly IVoteService _voteService;
 
-        public QuestionsController(IQuestionService questionService)
+        public QuestionsController(IQuestionService questionService, IGamificationService gamificationService, IVoteService voteService)
         {
             _questionService = questionService;
+            _gamificationService = gamificationService;
+            _voteService = voteService;
         }
 
         public async Task<IActionResult> Index(string? search, string? tag, string? sort)
@@ -47,14 +51,38 @@ namespace VzOverFlow.Controllers
         [Authorize]
         public async Task<IActionResult> Create(Question question, string? tags)
         {
+            // Remove User navigation property from validation
+            ModelState.Remove("User");
+            ModelState.Remove("AcceptedAnswer");
+            ModelState.Remove("Answers");
+            ModelState.Remove("Comments");
+            ModelState.Remove("Tags");
+            ModelState.Remove("Votes");
+
             if (!ModelState.IsValid)
             {
+                ViewBag.Tags = tags;
+                TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin câu hỏi.";
                 return View(question);
             }
 
-            question.UserId = GetCurrentUserId();
-            await _questionService.CreateQuestionAsync(question, ParseTags(tags));
-            return RedirectToAction(nameof(Details), new { id = question.Id });
+            try
+            {
+                question.UserId = GetCurrentUserId();
+                var createdQuestion = await _questionService.CreateQuestionAsync(question, ParseTags(tags));
+                
+                // Award XP for asking question
+                await _gamificationService.AwardXpAsync(question.UserId, ActivityType.AskQuestion, createdQuestion.Id);
+            
+                TempData["SuccessMessage"] = "Đã đăng câu hỏi thành công! +10 XP";
+                return RedirectToAction(nameof(Details), new { id = createdQuestion.Id });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Có lỗi xảy ra: {ex.Message}");
+                ViewBag.Tags = tags;
+                return View(question);
+            }
         }
 
         [Authorize]
@@ -80,6 +108,14 @@ namespace VzOverFlow.Controllers
                 return BadRequest();
             }
 
+            // Remove navigation properties from validation
+            ModelState.Remove("User");
+            ModelState.Remove("AcceptedAnswer");
+            ModelState.Remove("Answers");
+            ModelState.Remove("Comments");
+            ModelState.Remove("Tags");
+            ModelState.Remove("Votes");
+
             if (!ModelState.IsValid)
             {
                 ViewBag.Tags = tags;
@@ -97,6 +133,23 @@ namespace VzOverFlow.Controllers
         {
             await _questionService.DeleteQuestionAsync(id);
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> VoteQuestion(int questionId, int value)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var newScore = await _voteService.VoteQuestionAsync(questionId, userId, value);
+                return Json(new { success = true, score = newScore });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         private static List<string> ParseTags(string? tags)

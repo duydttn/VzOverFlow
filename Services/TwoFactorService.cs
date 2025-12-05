@@ -45,14 +45,40 @@ namespace VzOverFlow.Services
                 OtpPurpose.EnableTwoFactor => "[VzOverFlow] Mã kích hoạt bảo mật 2 lớp",
                 OtpPurpose.DisableTwoFactor => "[VzOverFlow] Mã vô hiệu hóa bảo mật 2 lớp",
                 OtpPurpose.ChangePassword => "[VzOverFlow] Mã xác nhận đổi mật khẩu",
-                _ => "[VzOverFlow] Mã đăng nhập"
+                OtpPurpose.EmailVerification => "[VzOverFlow] Xác thực email đăng ký",
+                OtpPurpose.Login => "[VzOverFlow] Mã xác thực đăng nhập",
+                _ => "[VzOverFlow] Mã xác thực"
             };
 
-            var body = $@"
-                <p>Xin chào {user.UserName},</p>
-                <p>Mã OTP của bạn là: <strong>{code}</strong></p>
-                <p>Mã sẽ hết hạn sau 5 phút.</p>
-                <p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>";
+            var body = purpose == OtpPurpose.EmailVerification
+    ? $@"
+    <h2>Chào mừng đến với VzOverFlow!</h2>
+                <p>Xin chào <strong>{user.UserName}</strong>,</p>
+  <p>Cảm ơn bạn đã đăng ký tài khoản. Để hoàn tất quá trình đăng ký, vui lòng nhập mã OTP sau:</p>
+       <div style='background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;'>
+      <p style='font-size: 24px; font-weight: bold; margin: 0; color: #1e40af;'>{code}</p>
+       </div>
+         <p>Mã sẽ hết hạn sau <strong>5 phút</strong>.</p>
+<p>Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>
+    <hr style='margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;'>
+     <p style='font-size: 12px; color: #6b7280;'>Email này được gửi tự động, vui lòng không trả lời.</p>"
+    : purpose == OtpPurpose.Login
+    ? $@"
+    <h2>Xác thực đăng nhập VzOverFlow</h2>
+  <p>Xin chào <strong>{user.UserName}</strong>,</p>
+    <p>Chúng tôi nhận được yêu cầu đăng nhập vào tài khoản của bạn. Để tiếp tục, vui lòng nhập mã OTP sau:</p>
+ <div style='background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;'>
+   <p style='font-size: 28px; font-weight: bold; margin: 0; color: #047857; letter-spacing: 4px;'>{code}</p>
+ </div>
+    <p>Mã sẽ hết hạn sau <strong>5 phút</strong>.</p>
+    <p style='color: #dc2626;'><strong>⚠️ Cảnh báo:</strong> Nếu bạn không thực hiện đăng nhập này, vui lòng bỏ qua email và xem xét đổi mật khẩu ngay.</p>
+       <hr style='margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;'>
+ <p style='font-size: 12px; color: #6b7280;'>Email này được gửi tự động từ VzOverFlow. Không chia sẻ mã này với bất kỳ ai.</p>"
+    : $@"
+    <p>Xin chào {user.UserName},</p>
+          <p>Mã OTP của bạn là: <strong>{code}</strong></p>
+        <p>Mã sẽ hết hạn sau 5 phút.</p>
+     <p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>";
 
             await _emailSender.SendAsync(user.Email, subject, body);
             return code;

@@ -29,21 +29,21 @@ namespace VzOverFlow.Data
             var admin = new User
             {
                 UserName = "admin",
-                Email = "admin@vzoverflow.dev",
+                Email = "cloudblue1911@gmail.com",
                 Reputation = 1500,
                 CreatedAt = DateTime.UtcNow.AddMonths(-2),
                 TwoFactorEnabled = true
             };
-            await userManager.CreateAsync(admin, "Admin@123");
+            await userManager.CreateAsync(admin, "Duybe265");
             await userManager.AddToRoleAsync(admin, adminRoleName);
 
             var member = new User
             {
-                UserName = "linh.nguyen",
-                Email = "linh.nguyen@vzoverflow.dev",
+                UserName = "duy.nguyen",
+                Email = "duybe222@hotmeilll.com",
                 Reputation = 320,
                 CreatedAt = DateTime.UtcNow.AddMonths(-1),
-                TwoFactorEnabled = false
+                TwoFactorEnabled = true
             };
             await userManager.CreateAsync(member, "Member@123");
 

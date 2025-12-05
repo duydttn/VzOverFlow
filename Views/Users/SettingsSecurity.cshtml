@@ -1,4 +1,4 @@
-@model VzOverFlow.Models.ViewModels.SecuritySettingsViewModel
+﻿@model VzOverFlow.Models.ViewModels.SecuritySettingsViewModel
 @{
     ViewData["Title"] = "Bảo mật tài khoản";
 }
@@ -6,102 +6,176 @@
 <div class="max-w-3xl mx-auto space-y-6">
     @await Html.PartialAsync("_SettingsNav")
 
-    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-        <h1 class="text-2xl font-semibold text-slate-900 mb-2">Bảo mật & OTP</h1>
-        <p class="text-sm text-slate-600">Kiểm soát bảo mật hai lớp và mật khẩu đăng nhập.</p>
+  <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+        <h1 class="text-2xl font-semibold text-slate-900 mb-2">Bảo mật & Xác thực hai yếu tố</h1>
+        <p class="text-sm text-slate-600">Bảo vệ tài khoản của bạn với xác thực hai yếu tố (2FA).</p>
+        
         @if (!string.IsNullOrEmpty(Model.StatusMessage))
         {
-            <div class="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                @Model.StatusMessage
-            </div>
+      var isError = Model.StatusMessage.StartsWith("error:");
+   var isSuccess = Model.StatusMessage.StartsWith("success:");
+            var message = Model.StatusMessage.Replace("error:", "").Replace("success:", "");
+            var cssClass = isError ? "border-red-200 bg-red-50 text-red-800" : isSuccess ? "border-green-200 bg-green-50 text-green-800" : "border-blue-200 bg-blue-50 text-blue-800";
+
+            <div class="mt-3 rounded-md border @cssClass px-3 py-2 text-xs">
+           @message
+    </div>
         }
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-        <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-semibold text-slate-900">Bảo mật 2 lớp (OTP)</h2>
-                    <p class="text-xs text-slate-500">
-                        @if (Model.TwoFactorEnabled)
-                        {
-                            <span>Đã bật. Mọi lần đăng nhập đều cần OTP gửi tới email.</span>
-                        }
-                        else
-                        {
-                            <span>Chưa bật. Bạn có thể kích hoạt để tăng độ an toàn.</span>
-                        }
-                    </p>
-                </div>
-                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs @(Model.TwoFactorEnabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600")">
-                    @(Model.TwoFactorEnabled ? "Đang bật" : "Đang tắt")
-                </span>
-            </div>
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+     <div class="flex items-center justify-between">
+            <div>
+          <h2 class="text-lg font-semibold text-slate-900">Xác thực hai yếu tố (2FA)</h2>
+    <p class="text-xs text-slate-500 mt-1">
+   @if (Model.TwoFactorEnabled)
+                    {
+        <span class="text-green-600">✓ Đã bật - Tài khoản được bảo vệ</span>
+                }
+      else
+          {
+          <span>Tăng cường bảo mật bằng ứng dụng xác thực</span>
+}
+       </p>
+         </div>
+    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium @(Model.TwoFactorEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600")">
+      @(Model.TwoFactorEnabled ? "Đang bật" : "Chưa bật")
+       </span>
+        </div>
 
-            <form asp-action="RequestTwoFactorCode" method="post" class="space-y-2">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="mode" value="@(Model.TwoFactorEnabled ? "disable" : "enable")" />
-                <button type="submit"
-                        class="w-full rounded-md border border-slate-200 px-3 py-2 hover:bg-slate-50">
-                    Gửi mã OTP @(Model.TwoFactorEnabled ? "để tắt 2FA" : "kích hoạt 2FA")
-                </button>
-            </form>
+      @if (!Model.TwoFactorEnabled)
+        {
+  <div class="border-t border-slate-200 pt-4 space-y-4">
+         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+  <h3 class="text-sm font-semibold text-blue-900 mb-2">📱 Bước 1: Tải ứng dụng xác thực</h3>
+                  <p class="text-xs text-blue-800 mb-3">
+  Tải một trong các ứng dụng sau về điện thoại:
+          </p>
+          <ul class="text-xs text-blue-700 space-y-1 ml-4">
+              <li>• <strong>Google Authenticator</strong> (iOS/Android)</li>
+  <li>• <strong>Microsoft Authenticator</strong> (iOS/Android)</li>
+      <li>• <strong>Authy</strong> (iOS/Android/Desktop)</li>
+          </ul>
+       </div>
 
-            <form asp-action="@(Model.TwoFactorEnabled ? "DisableTwoFactor" : "EnableTwoFactor")" method="post" class="space-y-2">
-                @Html.AntiForgeryToken()
-                <label class="block text-xs text-slate-500">Nhập mã OTP</label>
-                <input name="code" maxlength="6"
-                       class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <button type="submit"
-                        class="w-full rounded-md bg-slate-900 text-white px-3 py-2 hover:bg-slate-800">
-                    @(Model.TwoFactorEnabled ? "Xác nhận tắt 2FA" : "Xác nhận bật 2FA")
-                </button>
-            </form>
-        </section>
+      @if (!string.IsNullOrEmpty(Model.AuthenticatorKey))
+         {
+ <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+        <h3 class="text-sm font-semibold text-slate-900">📷 Bước 2: Quét mã QR</h3>
+  <p class="text-xs text-slate-600">Mở app và quét mã QR này:</p>
+    
+    @if (!string.IsNullOrEmpty(Model.QrCodeDataUrl))
+     {
+   <div class="flex justify-center p-4 bg-white rounded">
+            <img src="@Model.QrCodeDataUrl" alt="QR Code" class="w-48 h-48" />
+              </div>
+         }
 
-        <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
-            <h2 class="text-base font-semibold text-slate-900">Đổi mật khẩu</h2>
-            <p class="text-xs text-slate-500">
-                Bạn cần nhập mật khẩu cũ. Nếu bật 2FA, yêu cầu thêm mã OTP đổi mật khẩu.
+  <div class="bg-yellow-50 border border-yellow-300 rounded p-3">
+   <p class="text-xs text-yellow-800 mb-2">
+  <strong>⚠️ Quan trọng:</strong>  lại sau khi kích Lưu mã này ngay! Bạn sẽ không thể xemhoạt.
             </p>
+                   <div class="font-mono text-sm bg-white border border-yellow-300 px-3 py-2 rounded text-center select-all break-all">
+      @Model.FormattedKey
+      </div>
+      <p class="text-xs text-yellow-700 mt-2">
+            💡 <strong>Không quét được QR?</strong> Sao chép mã trên và nhập vào app xác thực
+      </p>
+     </div>
+      </div>
 
-            <form asp-action="RequestChangePasswordOtp" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit"
-                        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                    Gửi mã OTP đổi mật khẩu
-                </button>
-            </form>
+     <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+   <h3 class="text-sm font-semibold text-green-900 mb-2">✓ Bước 3: Xác nhận mã</h3>
+ <p class="text-xs text-green-800 mb-3">
+                Nhập mã 6 chữ số từ app để hoàn tất thiết lập:
+       </p>
+          
+         <form asp-action="EnableTwoFactor" method="post" class="space-y-3">
+          @Html.AntiForgeryToken()
+        <input name="verificationCode" 
+             type="text"
+     maxlength="6"
+          pattern="[0-9]{6}"
+    required
+               placeholder="000000"
+       class="w-full rounded-md border border-green-300 px-3 py-2 text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <button type="submit"
+       class="w-full rounded-md bg-green-600 text-white px-4 py-2 hover:bg-green-700 font-medium">
+                Xác nhận và Bật 2FA
+     </button>
+      </form>
+        </div>
+       }
+        else
+            {
+            <div class="flex justify-center">
+           <a href="@Url.Action("SecuritySettings", new { generateKey = true })"
+       class="rounded-md bg-blue-600 text-white px-6 py-3 hover:bg-blue-700 font-medium inline-block">
+         Bắt đầu thiết lập 2FA
+    </a>
+          </div>
+             }
+            </div>
+        }
+  else
+        {
+     <div class="border-t border-slate-200 pt-4 space-y-4">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 class="text-sm font-semibold text-green-900 mb-2">✓ 2FA đã được kích hoạt</h3>
+   <p class="text-xs text-green-800">
+        Tài khoản của bạn được bảo vệ bởi xác thực hai yếu tố. Mỗi lần đăng nhập, bạn sẽ cần nhập mã từ ứng dụng xác thực.
+       </p>
+           </div>
 
-            <form asp-action="ChangePassword" method="post" class="space-y-2">
-                @Html.AntiForgeryToken()
-                <div>
-                    <label class="block text-xs text-slate-500">Mật khẩu cũ</label>
-                    <input name="OldPassword" type="password"
-                           class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500">Mật khẩu mới</label>
-                    <input name="NewPassword" type="password"
-                           class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500">Xác nhận mật khẩu mới</label>
-                    <input name="ConfirmNewPassword" type="password"
-                           class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500">Mã OTP</label>
-                    <input name="OtpCode" maxlength="6"
-                           class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <button type="submit"
-                        class="w-full rounded-md bg-blue-600 text-white px-3 py-2 hover:bg-blue-700">
-                    Đổi mật khẩu
-                </button>
-            </form>
-        </section>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+               <h3 class="text-sm font-semibold text-blue-900 mb-2">🔐 Bảo mật đã được kích hoạt</h3>
+  <p class="text-xs text-blue-800 mb-2">
+       Mã xác thực của bạn đã được lưu an toàn. Vui lòng giữ ứng dụng xác thực trên thiết bị của bạn.
+       </p>
+             <p class="text-xs text-blue-700">
+        💡 <strong>Lưu ý:</strong> Nếu bạn mất quyền truy cập vào ứng dụng xác thực, bạn cần tắt 2FA và thiết lập lại từ đầu.
+    </p>
+  </div>
+
+   <form asp-action="DisableTwoFactor" method="post">
+        @Html.AntiForgeryToken()
+<button type="submit"
+    onclick="return confirm('Bạn có chắc muốn tắt xác thực hai yếu tố?\n\nSau khi tắt, bạn sẽ cần thiết lập lại hoàn toàn nếu muốn bật lại 2FA.\n\nTài khoản sẽ kém an toàn hơn.')"
+         class="w-full rounded-md bg-red-600 text-white px-4 py-2 hover:bg-red-700 font-medium">
+           Tắt xác thực hai yếu tố
+           </button>
+        </form>
+ </div>
+        }
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+        <h2 class="text-lg font-semibold text-slate-900">Đổi mật khẩu</h2>
+   <p class="text-xs text-slate-500">
+            Bảo vệ tài khoản bằng mật khẩu mạnh. Mật khẩu phải có ít nhất 6 ký tự và chứa số.
+        </p>
+
+    <form asp-controller="Users" asp-action="ChangePassword" method="post" class="space-y-3">
+       @Html.AntiForgeryToken()
+            <div>
+     <label class="block text-xs font-medium text-slate-700 mb-1">Mật khẩu hiện tại</label>
+     <input name="OldPassword" type="password" required
+         class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+ </div>
+            <div>
+         <label class="block text-xs font-medium text-slate-700 mb-1">Mật khẩu mới</label>
+                <input name="NewPassword" type="password" required minlength="6"
+           class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+<label class="block text-xs font-medium text-slate-700 mb-1">Xác nhận mật khẩu mới</label>
+        <input name="ConfirmPassword" type="password" required
+          class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+  </div>
+   <button type="submit"
+          class="w-full rounded-md bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 font-medium">
+        Đổi mật khẩu
+          </button>
+        </form>
     </div>
 </div>
-
-

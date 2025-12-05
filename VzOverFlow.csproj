@@ -25,13 +25,13 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="9.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
     <PackageReference Include="System.Net.WebSockets" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Views\Answers\" />
-    <Folder Include="Views\Users\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
 

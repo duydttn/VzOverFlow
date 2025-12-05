@@ -1,0 +1,87 @@
+@model VzOverFlow.Models.DailyMission
+
+<div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-slate-900">🎯 Nhiệm vụ hôm nay</h3>
+   <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+            +@Model.TotalXpToday XP
+        </span>
+    </div>
+
+<div class="mb-3">
+     <div class="flex items-center justify-between mb-1">
+            <span class="text-xs text-slate-600">💬 Đặt câu hỏi</span>
+     <span class="text-xs font-semibold text-slate-900">@Model.QuestionsAsked/5</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-1.5">
+    <div class="bg-blue-600 h-1.5 rounded-full transition-all" 
+           style="width: @(Math.Min(100, Model.QuestionsAsked * 20))%"></div>
+        </div>
+        @if (Model.QuestionsAsked >= 5)
+    {
+            <p class="text-xs text-green-600 mt-1">✓ Hoàn thành • +40 XP</p>
+      }
+        else
+        {
+            <p class="text-xs text-slate-500 mt-1">Cần @(5 - Model.QuestionsAsked) nữa • +40 XP</p>
+        }
+    </div>
+
+    <div class="mb-3">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs text-slate-600">✍️ Trả lời câu hỏi</span>
+         <span class="text-xs font-semibold text-slate-900">@Model.AnswersGiven/3</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-1.5">
+  <div class="bg-green-600 h-1.5 rounded-full transition-all" 
+      style="width: @(Math.Min(100, Model.AnswersGiven * 33.33))%"></div>
+        </div>
+        @if (Model.AnswersGiven >= 3)
+        {
+        <p class="text-xs text-green-600 mt-1">✓ Hoàn thành • +60 XP</p>
+        }
+    else
+        {
+            <p class="text-xs text-slate-500 mt-1">Cần @(3 - Model.AnswersGiven) nữa • +60 XP</p>
+        }
+    </div>
+
+    <div class="mb-3">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs text-slate-600">👍 Vote</span>
+ <span class="text-xs font-semibold text-slate-900">@Model.VotesCast/10</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-1.5">
+         <div class="bg-purple-600 h-1.5 rounded-full transition-all" 
+ style="width: @(Math.Min(100, Model.VotesCast * 10))%"></div>
+        </div>
+   @if (Model.VotesCast >= 10)
+        {
+   <p class="text-xs text-green-600 mt-1">✓ Hoàn thành • +30 XP</p>
+        }
+        else
+        {
+       <p class="text-xs text-slate-500 mt-1">Cần @(10 - Model.VotesCast) nữa • +30 XP</p>
+     }
+    </div>
+
+    <div class="pt-3 border-t border-slate-200">
+        <p class="text-xs text-slate-600">
+     Hôm nay bạn đã nhận được tổng cộng <strong class="text-blue-600">@Model.TotalXpToday XP</strong>. 
+      @{
+    int completedMissions = 0;
+       if (Model.QuestionsAsked >= 5) completedMissions++;
+   if (Model.AnswersGiven >= 3) completedMissions++;
+         if (Model.VotesCast >= 10) completedMissions++;
+         }
+            @if (completedMissions == 3)
+       {
+         <span class="text-green-600">🎉 Hoàn thành tất cả nhiệm vụ!</span>
+  }
+            else
+            {
+    <span>Tiếp tục đóng góp để mở thêm huy hiệu!</span>
+            }
+ </p>
+    </div>
+</div>

@@ -19,6 +19,10 @@ namespace VzOverFlow.Data
         public new DbSet<User> Users { get; set; } = default!;
         public DbSet<Vote> Votes { get; set; } = default!;
         public DbSet<OneTimeCode> OneTimeCodes { get; set; } = default!;
+        public DbSet<Report> Reports { get; set; } = default!;
+        public DbSet<UserActivity> UserActivities { get; set; } = default!;
+        public DbSet<UserBadge> UserBadges { get; set; } = default!;
+        public DbSet<DailyMission> DailyMissions { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -58,6 +62,63 @@ namespace VzOverFlow.Data
                 .WithMany(u => u.OneTimeCodes)
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.Reporter)
+                .WithMany()
+                .HasForeignKey(r => r.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.Question)
+                .WithMany()
+                .HasForeignKey(r => r.QuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.Answer)
+                .WithMany()
+                .HasForeignKey(r => r.AnswerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ResolvedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Report>()
+                .ToTable(t => t.HasCheckConstraint("CK_Report_Content", 
+          "(QuestionId IS NOT NULL AND AnswerId IS NULL) OR (QuestionId IS NULL AND AnswerId IS NOT NULL)"));
+
+            builder.Entity<UserActivity>()
+                .HasOne(a => a.User)
+                .WithMany(u => u.Activities)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<UserActivity>()
+                .HasIndex(a => new { a.UserId, a.CreatedAt });
+
+            builder.Entity<UserBadge>()
+                .HasOne(b => b.User)
+                .WithMany(u => u.Badges)
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<UserBadge>()
+                .HasIndex(b => new { b.UserId, b.Badge })
+                .IsUnique();
+
+            builder.Entity<DailyMission>()
+                .HasOne(d => d.User)
+                .WithMany(u => u.DailyMissions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<DailyMission>()
+                .HasIndex(d => new { d.UserId, d.Date })
+                .IsUnique();
         }
     }
 }

@@ -3,6 +3,22 @@
     ViewData["Title"] = "Trang chủ";
 }
 
+@* Welcome Message after Registration *@
+@if (TempData["WelcomeMessage"] != null)
+{
+    <div class="mb-6 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+        <div class="flex items-start gap-3">
+  <svg class="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+  <div>
+<h3 class="font-semibold text-green-900 mb-1">@TempData["WelcomeMessage"]</h3>
+    <p class="text-sm text-green-800">Bạn có thể bắt đầu đặt câu hỏi, trả lời và tương tác với cộng đồng ngay bây giờ!</p>
+     </div>
+        </div>
+ </div>
+}
+
 <div class="mb-6 flex items-start justify-between gap-4">
     <div>
         <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-1">

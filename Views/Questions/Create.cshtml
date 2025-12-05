@@ -12,6 +12,26 @@
     </p>
 </div>
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <strong>Có lỗi xảy ra:</strong>
+        <ul class="list-disc list-inside mt-2">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
 <form asp-action="Create" method="post" id="ask-question-form">
     @Html.AntiForgeryToken()
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
