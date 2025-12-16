@@ -69,7 +69,7 @@ namespace VzOverFlow.Services
             };
         }
 
-        public async Task<QuestionDetailViewModel?> GetQuestionDetailAsync(int id, bool increaseViewCount = false)
+        public async Task<QuestionDetailViewModel?> GetQuestionDetailAsync(int id, bool increaseViewCount = false, string? sortBy = "accepted")
         {
             var question = await _context.Questions
                 .Include(q => q.User)
@@ -96,7 +96,8 @@ namespace VzOverFlow.Services
             {
                 Question = question,
                 VoteScore = question.Votes.Sum(v => v.Value),
-                AnswerCount = question.Answers.Count
+                AnswerCount = question.Answers.Count,
+                SortBy = sortBy ?? "accepted"
             };
 
             return viewModel;

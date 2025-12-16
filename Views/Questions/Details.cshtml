@@ -121,10 +121,29 @@
     <h2 class="text-lg font-semibold text-slate-900">
         @Model.AnswerCount câu trả lời
     </h2>
+    <div class="flex items-center gap-2">
+        <label for="sortAnswers" class="text-xs text-slate-600">Sắp xếp:</label>
+        <select id="sortAnswers" name="sortBy" 
+                class="text-xs rounded-md border border-slate-200 px-2 py-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="accepted" selected="@(Model.SortBy == "accepted")">Đã chấp nhận</option>
+            <option value="votes" selected="@(Model.SortBy == "votes")">Nhiều vote nhất</option>
+            <option value="newest" selected="@(Model.SortBy == "newest")">Mới nhất</option>
+            <option value="oldest" selected="@(Model.SortBy == "oldest")">Cũ nhất</option>
+        </select>
+    </div>
 </div>
 
-<div class="space-y-4 mb-8">
-@foreach (var answer in question.Answers.OrderByDescending(a => a.IsAccepted).ThenBy(a => a.CreatedAt))
+<div class="space-y-4 mb-8" id="answersContainer">
+@{
+    var sortedAnswers = Model.SortBy switch
+    {
+        "votes" => question.Answers.OrderByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt),
+        "newest" => question.Answers.OrderByDescending(a => a.CreatedAt),
+        "oldest" => question.Answers.OrderBy(a => a.CreatedAt),
+        _ => question.Answers.OrderByDescending(a => a.IsAccepted).ThenByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt)
+    };
+}
+@foreach (var answer in sortedAnswers)
 {
     var score = answer.Votes?.Sum(v => v.Value) ?? 0;
     <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
@@ -367,6 +386,17 @@ copyToClipboard(url, this);
     alert('Lỗi sao chép. Vui lòng thử lại!');
  });
  }
+
+    // Sort answers functionality
+    const sortSelect = document.getElementById('sortAnswers');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const sortBy = this.value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('sortBy', sortBy);
+            window.location.href = url.toString();
+        });
+    }
         });
     </script>
 }

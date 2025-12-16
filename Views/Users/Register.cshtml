@@ -38,6 +38,13 @@
             <span asp-validation-for="Password" class="text-xs text-red-500"></span>
         </div>
 
+        <div>
+            <label asp-for="ConfirmPassword" class="block text-sm font-medium text-slate-800 mb-1">Xác nhận mật khẩu</label>
+            <input asp-for="ConfirmPassword" type="password" required
+                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm foc?s:outline-none foc?s:ring-2 foc?s:ring-blue-500 foc?s:border-blue-500" />
+            <span asp-validation-for="ConfirmPassword" class="text-xs text-red-500"></span>
+        </div>
+
         <button type="submit"
                 class="w-full rounded-md bg-slate-900 text-white text-sm px-3 py-2 hover:bg-slate-800">
             Đăng ký

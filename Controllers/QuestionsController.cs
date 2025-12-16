@@ -29,14 +29,15 @@ namespace VzOverFlow.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, string? sortBy = "accepted")
         {
-            var model = await _questionService.GetQuestionDetailAsync(id, increaseViewCount: true);
+            var model = await _questionService.GetQuestionDetailAsync(id, increaseViewCount: true, sortBy: sortBy);
             if (model == null)
             {
                 return NotFound();
             }
 
+            ViewBag.SortBy = sortBy;
             return View(model);
         }
 

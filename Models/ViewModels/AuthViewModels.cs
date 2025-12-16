@@ -18,6 +18,12 @@ namespace VzOverFlow.Models.ViewModels
         [DataType(DataType.Password)]
         [Display(Name = "Mật khẩu")]
         public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Compare(nameof(Password), ErrorMessage = "Mật khẩu xác nhận không khớp")]
+        [Display(Name = "Xác nhận mật khẩu")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 
     public class LoginViewModel

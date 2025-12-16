@@ -8,7 +8,7 @@ namespace VzOverFlow.Services
     public interface IQuestionService
     {
         Task<QuestionListViewModel> GetQuestionsAsync(string? search, string? tag, string? sort = null);
-        Task<QuestionDetailViewModel?> GetQuestionDetailAsync(int id, bool increaseViewCount = false);
+        Task<QuestionDetailViewModel?> GetQuestionDetailAsync(int id, bool increaseViewCount = false, string? sortBy = "accepted");
         Task<Question?> GetQuestionEntityAsync(int id);
         Task<Question> CreateQuestionAsync(Question question, List<string> tags);
         Task UpdateQuestionAsync(Question question, List<string> tags);
