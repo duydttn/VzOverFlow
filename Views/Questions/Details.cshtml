@@ -1,402 +1,517 @@
 ﻿@model VzOverFlow.Models.ViewModels.QuestionDetailViewModel
 @{
     ViewData["Title"] = Model.Question.Title;
-  var question = Model.Question;
+    var question = Model.Question;
+    // Lấy ID người dùng an toàn, tránh lỗi null
     var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     var currentUserIdInt = !string.IsNullOrEmpty(currentUserId) ? int.Parse(currentUserId) : 0;
 }
 
 <style>
     .vote-btn.voted {
-        background-color: rgb(241 245 249); /* slate-100 */
+        background-color: rgb(224 242 254); /* Màu nền khi đã vote */
     }
-    
+
     .vote-btn svg {
-        transition: color 0.2s;
+        transition: transform 0.1s, color 0.2s;
+    }
+
+    .vote-btn:active svg {
+        transform: scale(0.9);
+    }
+
+    /* Định dạng hiển thị Code */
+    .prose pre {
+        background-color: #1e293b; /* Nền tối cho code */
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto; /* Thanh cuộn ngang nếu code dài */
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875em;
+        margin-bottom: 1.5em;
+    }
+    /* Xử lý ảnh trong bài viết */
+    .prose img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
     }
 </style>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center gap-3 shadow-sm animate-fade-in-down">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
         </svg>
-        <span>@TempData["SuccessMessage"]</span>
+        <span class="font-medium">@TempData["SuccessMessage"]</span>
     </div>
 }
 
-<div class="mb-4 flex items-start justify-between gap-4">
-    <div>
-   <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 mb-2">
-        @question.Title
+<div class="border-b border-slate-200 pb-4 mb-6">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 leading-snug break-words">
+            @question.Title
         </h1>
-        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-     <span>Hỏi @question.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-       @if (question.UpdatedAt.HasValue)
-     {
-     <span>•</span>
-     <span>Chỉnh sửa @question.UpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-  }
-    <span>•</span>
-    <span>@question.ViewCount lượt xem</span>
-  </div>
+        <div class="flex-shrink-0">
+            <a asp-controller="Questions" asp-action="Create" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap">
+                Đặt câu hỏi
+            </a>
+        </div>
     </div>
 
- <div class="flex items-center gap-2">
-        @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == question.UserId.ToString())
-  {
-          <a asp-controller="Questions" asp-action="Edit" asp-route-id="@question.Id"
-    class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50">
-      Chỉnh sửa
- </a>
-      <form asp-action="Delete" asp-route-id="@question.Id" method="post" class="inline"
-    onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi này?');">
-     @Html.AntiForgeryToken()
-    <button type="submit"
-          class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700 hover:bg-red-100">
-   Xóa
-</button>
-    </form>
- }
-     else if (User.Identity?.IsAuthenticated == true)
+    <div class="flex flex-wrap items-center gap-4 mt-3 text-xs md:text-sm text-slate-500">
+        <span title="@question.CreatedAt.ToString("dd/MM/yyyy HH:mm")">
+            <span class="text-slate-400">Đã hỏi</span>
+            <span class="text-slate-900 font-medium">@question.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+        </span>
+        @if (question.UpdatedAt.HasValue)
         {
-   <a asp-controller="Reports" asp-action="Create" asp-route-questionId="@question.Id"
-       class="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs text-orange-700 hover:bg-orange-100">
-       🚨 Báo cáo vi phạm
-       </a>
+            <span title="@question.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")">
+                <span class="text-slate-400">Sửa</span>
+                <span class="text-slate-900 font-medium">@question.UpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+            </span>
         }
+        <span>
+            <span class="text-slate-400">Đã xem</span>
+            <span class="text-slate-900 font-medium">@question.ViewCount lần</span>
+        </span>
     </div>
 </div>
 
-@await Html.PartialAsync("_AISummary", Model)
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
 
-<div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm mb-6">
-    <div class="flex gap-4">
-    <div class="flex flex-col items-center text-sm text-slate-700">
-          <button class="vote-btn vote-up p-1 hover:bg-slate-100 rounded transition-colors" data-type="question" data-id="@question.Id" data-value="1">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400 hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                </svg>
-          </button>
-            <div class="vote-score my-2 text-2xl font-semibold" data-type="question" data-id="@question.Id">@Model.VoteScore</div>
-<button class="vote-btn vote-down p-1 hover:bg-slate-100 rounded transition-colors" data-type="question" data-id="@question.Id" data-value="-1">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400 hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-    </svg>
-            </button>
-  </div>
+    <main>
+        <div class="flex gap-4 md:gap-6 mb-12">
+            <div class="flex flex-col items-center gap-1 w-10 md:w-12 shrink-0 pt-1">
+                <button class="vote-btn vote-up w-10 h-10 rounded-full flex items-center justify-center hover:bg-orange-50 transition-colors border border-transparent"
+                        data-type="question" data-id="@question.Id" data-value="1" title="Hữu ích">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
 
-  <div class="flex-1 min-w-0">
-          <div class="prose max-w-none text-sm text-slate-800 mb-4 whitespace-pre-wrap">
-        @question.Body
-         </div>
+                <div class="vote-score text-xl md:text-2xl font-bold text-slate-700 py-1" data-type="question" data-id="@question.Id">
+                    @Model.VoteScore
+                </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2 mt-4">
-            <div class="flex flex-wrap gap-2 items-center">
-            @foreach (var tag in question.Tags)
-    {
-   <a asp-controller="Questions" asp-action="Index" asp-route-tag="@tag.Name"
-  class="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-700 px-2 py-0.5 hover:bg-slate-200">
-   @tag.Name
-        </a>
-     }
-         <button class="share-btn inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 transition-colors" data-url="@Url.Action("Details", "Questions", new { id = question.Id }, Context.Request.Scheme)" title="Share this question">
-   <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-                <span>Share</span>
-                 </button>
-   </div>
-  <div class="flex items-center gap-2 text-xs text-slate-500">
-             <span>hỏi bởi</span>
-       <span class="font-medium text-slate-800">@question.User.UserName</span>
-        </div>
- </div>
-        </div>
-    </div>
-</div>
+                <button class="vote-btn vote-down w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-50 transition-colors border border-transparent"
+                        data-type="question" data-id="@question.Id" data-value="-1" title="Không hữu ích">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
 
-<div class="mb-4 flex items-center justify-between">
-    <h2 class="text-lg font-semibold text-slate-900">
-        @Model.AnswerCount câu trả lời
-    </h2>
-    <div class="flex items-center gap-2">
-        <label for="sortAnswers" class="text-xs text-slate-600">Sắp xếp:</label>
-        <select id="sortAnswers" name="sortBy" 
-                class="text-xs rounded-md border border-slate-200 px-2 py-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="accepted" selected="@(Model.SortBy == "accepted")">Đã chấp nhận</option>
-            <option value="votes" selected="@(Model.SortBy == "votes")">Nhiều vote nhất</option>
-            <option value="newest" selected="@(Model.SortBy == "newest")">Mới nhất</option>
-            <option value="oldest" selected="@(Model.SortBy == "oldest")">Cũ nhất</option>
-        </select>
-    </div>
-</div>
+            <div class="flex-1 min-w-0 overflow-hidden">
+                <div class="mb-6">
+                    @await Html.PartialAsync("_AISummary", Model)
+                </div>
 
-<div class="space-y-4 mb-8" id="answersContainer">
-@{
-    var sortedAnswers = Model.SortBy switch
-    {
-        "votes" => question.Answers.OrderByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt),
-        "newest" => question.Answers.OrderByDescending(a => a.CreatedAt),
-        "oldest" => question.Answers.OrderBy(a => a.CreatedAt),
-        _ => question.Answers.OrderByDescending(a => a.IsAccepted).ThenByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt)
-    };
-}
-@foreach (var answer in sortedAnswers)
-{
-    var score = answer.Votes?.Sum(v => v.Value) ?? 0;
-    <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-        <div class="flex gap-4">
-      <div class="flex flex-col items-center text-sm text-slate-700 min-w-[50px]">
-   <button class="vote-btn vote-up p-1 hover:bg-slate-100 rounded transition-colors" data-type="answer" data-id="@answer.Id" data-value="1">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-    </svg>
-        </button>
-         <div class="vote-score my-1 text-xl font-semibold" data-type="answer" data-id="@answer.Id">@score</div>
-                <button class="vote-btn vote-down p-1 hover:bg-slate-100 rounded transition-colors" data-type="answer" data-id="@answer.Id" data-value="-1">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-              </button>
-             @if (answer.IsAccepted)
-           {
-          <div class="mt-2 text-green-600 text-xs font-semibold">
-       ✓ Accepted
-       </div>
-        }
-  </div>
-      <div class="flex-1 min-w-0">
-         <div class="prose max-w-none text-sm text-slate-800 mb-3 whitespace-pre-wrap">
-     @answer.Body
-              </div>
+                @using VzOverFlow.Helpers <div class= "prose prose-slate max-w-none text-slate-800 mb-8 leading-7 text-[15px] break-words" >
+                    @Html.Raw(MarkdownHelper.ToHtml(question.Body))
+                </div>
 
-    <div class="flex justify-between items-center text-xs text-slate-500">
-         <div class="flex items-center gap-2">
-                <span>trả lời</span>
-        <span>@answer.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-       </div>
-    <div>
-    <span class="font-medium text-slate-800">@answer.User.UserName</span>
-          </div>
+                <div class="flex flex-wrap gap-2 mb-8">
+                    @foreach (var tag in question.Tags)
+                    {
+                        <a asp-controller="Questions" asp-action="Index" asp-route-tag="@tag.Name"
+                           class="inline-flex items-center rounded bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-colors">
+                            @tag.Name
+                        </a>
+                    }
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-4 border-t border-slate-100">
+                    <div class="flex flex-wrap gap-4 text-xs md:text-sm text-slate-500 pt-1 font-medium">
+                        <button class="share-btn hover:text-slate-800 flex items-center gap-1 transition-colors"
+                                data-url="@Url.Action("Details", "Questions", new { id = question.Id }, Context.Request.Scheme)">
+                            <span>Chia sẻ</span>
+                        </button>
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == question.UserId.ToString())
+                            {
+                                <a asp-controller="Questions" asp-action="Edit" asp-route-id="@question.Id" class="hover:text-slate-800 transition-colors">Sửa</a>
+                                <form asp-action="Delete" asp-route-id="@question.Id" method="post" class="inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi này?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="hover:text-red-600 text-red-500 transition-colors">Xóa</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-controller="Reports" asp-action="Create" asp-route-questionId="@question.Id" class="hover:text-red-600 transition-colors">Báo cáo</a>
+                            }
+                        }
+                    </div>
+
+                    <div class="sm:w-48 bg-blue-50 border border-blue-100 rounded p-3 text-xs shadow-sm">
+                        <div class="text-slate-500 mb-1">đã hỏi @question.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded bg-white border border-blue-200 flex-shrink-0 overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@question.User.UserName" alt="@question.User.UserName" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex flex-col overflow-hidden">
+                                <a asp-controller="Users" asp-action="Profile" asp-route-id="@question.User.Id" class="text-blue-700 hover:underline font-bold truncate">
+                                    @question.User.UserName
+                                </a>
+                                <div class="flex items-center gap-1 text-slate-600 font-bold">
+                                    <span class="text-yellow-500 text-[10px]">●</span> <span>@question.User.Reputation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </article>
-}
-</div>
 
-<section class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-    <h3 class="text-lg font-semibold text-slate-900 mb-3">
-        Viết câu trả lời của bạn
-    </h3>
-    <form asp-controller="Answers" asp-action="Create" method="post" class="space-y-3">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="questionId" value="@question.Id" />
-        <textarea name="Body" rows="8"
-                  class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Hãy mô tả rõ ràng cách giải quyết, giải thích nguyên nhân, và cung cấp ví dụ code nếu cần."></textarea>
-        <p class="text-[11px] text-slate-500">
-            Bằng việc đăng câu trả lời, bạn đồng ý chia sẻ nội dung dưới giấy phép phù hợp cho cộng đồng.
-        </p>
-        <button type="submit"
-      class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm px-4 py-2 hover:bg-blue-700 shadow-sm">
-      Đăng câu trả lời
-        </button>
-  </form>
-</section>
+        <div class="mt-10">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg md:text-xl font-semibold text-slate-900">
+                    @Model.AnswerCount câu trả lời
+                </h2>
+                <div class="relative">
+                    <select id="sortAnswers" name="sortBy"
+                            class="appearance-none bg-white border border-slate-300 text-slate-700 text-xs rounded py-1.5 pl-3 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                        <option value="accepted" selected="@(Model.SortBy == "accepted")">Đã chấp nhận</option>
+                        <option value="votes" selected="@(Model.SortBy == "votes")">Điểm cao nhất</option>
+                        <option value="newest" selected="@(Model.SortBy == "newest")">Mới nhất</option>
+                        <option value="oldest" selected="@(Model.SortBy == "oldest")">Cũ nhất</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-8" id="answersContainer">
+                @{
+                    var sortedAnswers = Model.SortBy switch
+                    {
+                        "votes" => question.Answers.OrderByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt),
+                        "newest" => question.Answers.OrderByDescending(a => a.CreatedAt),
+                        "oldest" => question.Answers.OrderBy(a => a.CreatedAt),
+                        _ => question.Answers.OrderByDescending(a => a.IsAccepted).ThenByDescending(a => a.Votes?.Sum(v => v.Value) ?? 0).ThenByDescending(a => a.CreatedAt)
+                    };
+                }
+
+                @foreach (var answer in sortedAnswers)
+                {
+                    var score = answer.Votes?.Sum(v => v.Value) ?? 0;
+                    <div id="answer-@answer.Id" class="flex gap-4 md:gap-6 border-b border-slate-100 pb-8 last:border-0 relative @(answer.IsAccepted ? "bg-green-50/40 -mx-4 px-4 rounded-lg border border-green-100 pt-4" : "")">
+
+                        <div class="flex flex-col items-center gap-1 w-10 md:w-12 shrink-0">
+                            <button class="vote-btn vote-up w-10 h-10 rounded-full flex items-center justify-center hover:bg-orange-50 transition-colors border border-transparent"
+                                    data-type="answer" data-id="@answer.Id" data-value="1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-slate-300" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <div class="vote-score text-xl font-bold text-slate-700 py-1" data-type="answer" data-id="@answer.Id">@score</div>
+
+                            <button class="vote-btn vote-down w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-50 transition-colors border border-transparent"
+                                    data-type="answer" data-id="@answer.Id" data-value="-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-slate-300" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            @if (answer.IsAccepted)
+                            {
+                                <div class="mt-3 text-green-600" title="Đã chấp nhận">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="flex-1 min-w-0 overflow-hidden">
+                            <div class="prose prose-slate max-w-none text-slate-800 mb-6 text-[15px] break-words">
+                                @Html.Raw(MarkdownHelper.ToHtml(answer.Body))
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                                <div class="flex gap-3 text-xs md:text-sm text-slate-400 font-medium">
+                                    <button class="share-btn hover:text-slate-600 transition-colors"
+                                            data-url="@Url.Action("Details", "Questions", new { id = question.Id }, Context.Request.Scheme)#answer-@answer.Id">
+                                        Chia sẻ
+                                    </button>
+
+                                    @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == answer.UserId.ToString())
+                                    {
+                                        <a asp-controller="Answers" asp-action="Edit" asp-route-id="@answer.Id" class="hover:text-slate-600 transition-colors">Sửa</a>
+                                        <form asp-controller="Answers" asp-action="Delete" asp-route-id="@answer.Id" method="post" class="inline" onsubmit="return confirm('Xóa câu trả lời này?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="hover:text-red-500 transition-colors">Xóa</button>
+                                        </form>
+                                    }
+                                </div>
+
+                                <div class="sm:w-48 rounded p-2 text-xs shadow-sm @(answer.IsAccepted ? "bg-green-100" : "bg-slate-100")">
+                                    <div class="text-slate-500 mb-1">trả lời @answer.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM")</div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex-shrink-0 overflow-hidden">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@answer.User.UserName" alt="@answer.User.UserName" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex flex-col overflow-hidden">
+                                            <a asp-controller="Users" asp-action="Profile" asp-route-id="@answer.UserId"
+                                               class="text-blue-700 hover:underline font-bold truncate">
+                                                @answer.User.UserName
+                                            </a>
+
+                                            <div class="flex items-center gap-1 text-slate-600 font-bold">
+                                                <span class="text-yellow-500 text-[10px]">●</span> <span>@answer.User.Reputation</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">
+                Viết câu trả lời của bạn
+            </h3>
+            <form asp-controller="Answers" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="questionId" value="@question.Id" />
+
+                <div class="mb-4">
+                    <textarea name="Body" rows="10"
+                              class="w-full rounded-md border border-slate-300 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-shadow"
+                              placeholder="Nhập câu trả lời chi tiết tại đây. Bạn có thể dùng Markdown hoặc HTML."></textarea>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <p class="text-xs text-slate-500 hidden sm:block">
+                        Câu trả lời hay sẽ nhận được nhiều upvote từ cộng đồng.
+                    </p>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white text-sm font-medium px-5 py-2.5 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all">
+                        Đăng câu trả lời
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <aside class="hidden lg:block space-y-6">
+        <div class="bg-white border border-slate-200 rounded-md p-4 shadow-sm text-sm">
+            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">Thống kê</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Đã hỏi</span>
+                    <span class="text-slate-900">@((DateTime.Now - question.CreatedAt).Days) ngày trước</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Lượt xem</span>
+                    <span class="text-slate-900">@question.ViewCount</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Số câu trả lời</span>
+                    <span class="text-slate-900">@Model.AnswerCount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-sm">
+            <h4 class="font-bold text-slate-700 mb-3">Câu hỏi liên quan</h4>
+            <div class="space-y-3">
+                <a href="#" class="block group">
+                    <div class="flex gap-3">
+                        <div class="shrink-0 bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs h-fit font-medium">15</div>
+                        <span class="text-blue-600 group-hover:text-blue-800 line-clamp-2">Làm thế nào để xử lý NullReferenceException trong C#?</span>
+                    </div>
+                </a>
+                <a href="#" class="block group">
+                    <div class="flex gap-3">
+                        <div class="shrink-0 bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs h-fit font-medium">2</div>
+                        <span class="text-blue-600 group-hover:text-blue-800 line-clamp-2">Entity Framework Core 8 có gì mới?</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </aside>
+</div>
 
 @section Scripts {
     <script>
-  document.addEventListener('DOMContentLoaded', function() {
-       // Store user's current votes (key: "type-id", value: vote value)
-  const userVotes = {};
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Vote Logic ---
+            const userVotes = {};
 
-            // Initialize user votes from server (we'll add this data from backend)
             @if (User.Identity?.IsAuthenticated == true && currentUserIdInt > 0)
-    {
-     // Get user's vote on the question
-    var questionVote = Model.Question.Votes?.FirstOrDefault(v => v.UserId == currentUserIdInt);
-         if (questionVote != null)
-             {
-                <text>
-          userVotes['question-@Model.Question.Id'] = @questionVote.Value;
-          highlightVoteButton('question', @Model.Question.Id, @questionVote.Value);
-       </text>
-      }
+            {
+                    var questionVote = Model.Question.Votes?.FirstOrDefault(v => v.UserId == currentUserIdInt);
+                    if (questionVote != null)
+                    {
+                            <text>
+                                userVotes['question-@Model.Question.Id'] = @questionVote.Value;
+                                highlightVoteButton('question', @Model.Question.Id, @questionVote.Value);
+                            </text>
+                    }
 
-         // Get user's votes on answers
-    foreach (var answer in Model.Question.Answers)
-       {
-      var answerVote = answer.Votes?.FirstOrDefault(v => v.UserId == currentUserIdInt);
-       if (answerVote != null)
-         {
-            <text>
-           userVotes['answer-@answer.Id'] = @answerVote.Value;
- highlightVoteButton('answer', @answer.Id, @answerVote.Value);
-     </text>
-        }
-    }
-      }
-
-function highlightVoteButton(type, id, value) {
-            const upBtn = document.querySelector(`.vote-btn.vote-up[data-type="${type}"][data-id="${id}"]`);
- const downBtn = document.querySelector(`.vote-btn.vote-down[data-type="${type}"][data-id="${id}"]`);
-      
-        if (value === 1 && upBtn) {
-       upBtn.classList.add('voted');
-       upBtn.querySelector('svg').classList.add('text-orange-500');
-             upBtn.querySelector('svg').classList.remove('text-slate-400');
-    } else if (value === -1 && downBtn) {
-    downBtn.classList.add('voted');
-        downBtn.querySelector('svg').classList.add('text-blue-500');
- downBtn.querySelector('svg').classList.remove('text-slate-400');
-       }
+                    foreach (var answer in Model.Question.Answers)
+                    {
+                            var answerVote = answer.Votes?.FirstOrDefault(v => v.UserId == currentUserIdInt);
+                            if (answerVote != null)
+                            {
+                                    <text>
+                                        userVotes['answer-@answer.Id'] = @answerVote.Value;
+                                        highlightVoteButton('answer', @answer.Id, @answerVote.Value);
+                                    </text>
+                            }
+                    }
             }
 
-         function removeHighlight(type, id) {
-         const upBtn = document.querySelector(`.vote-btn.vote-up[data-type="${type}"][data-id="${id}"]`);
-       const downBtn = document.querySelector(`.vote-btn.vote-down[data-type="${type}"][data-id="${id}"]`);
-          
-      if (upBtn) {
-                    upBtn.classList.remove('voted');
-               upBtn.querySelector('svg').classList.remove('text-orange-500');
-  upBtn.querySelector('svg').classList.add('text-slate-400');
-    }
-         if (downBtn) {
-        downBtn.classList.remove('voted');
-          downBtn.querySelector('svg').classList.remove('text-blue-500');
-             downBtn.querySelector('svg').classList.add('text-slate-400');
-           }
-       }
+            function highlightVoteButton(type, id, value) {
+                const upBtn = document.querySelector(`.vote-btn.vote-up[data-type="${type}"][data-id="${id}"]`);
+                const downBtn = document.querySelector(`.vote-btn.vote-down[data-type="${type}"][data-id="${id}"]`);
 
-            // Vote functionality
- document.querySelectorAll('.vote-btn').forEach(button => {
-button.addEventListener('click', async function(e) {
-  e.preventDefault();
-         
-  @if (User.Identity?.IsAuthenticated != true)
-    {
- <text>
- alert('Vui lòng đăng nhập để vote!');
-   return;
-    </text>
-  }
-        
-    const type = this.dataset.type;
-        const id = this.dataset.id;
-        const clickedValue = parseInt(this.dataset.value);
-    const voteKey = `${type}-${id}`;
-   const currentVote = userVotes[voteKey] || 0;
-         
-    // Determine new vote value
-   let newValue;
-            if (currentVote === clickedValue) {
-           // User clicked same button again -> remove vote
-         newValue = 0;
-     } else {
-        // User clicked different button -> set new vote
-    newValue = clickedValue;
-             }
- 
-        const scoreElement = document.querySelector(`.vote-score[data-type="${type}"][data-id="${id}"]`);
-         
-   try {
-        const url = type === 'question' 
-           ? '@Url.Action("VoteQuestion", "Questions")'
-       : '@Url.Action("VoteAnswer", "Answers")';
- 
-      const formData = new FormData();
-        formData.append(type === 'question' ? 'questionId' : 'answerId', id);
-        formData.append('value', newValue);
-          formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
-        
-       const response = await fetch(url, {
-     method: 'POST',
-    body: formData
-    });
-       
-               const result = await response.json();
-     
-     if (result.success) {
-          // Update score display
-            scoreElement.textContent = result.score;
-  
-          // Update stored vote
-         if (newValue === 0) {
-               delete userVotes[voteKey];
-          removeHighlight(type, id);
-   } else {
-        userVotes[voteKey] = newValue;
- removeHighlight(type, id);
-  highlightVoteButton(type, id, newValue);
-       }
-       
-     // Show feedback
-        if (newValue === 0) {
-    console.log('Đã bỏ vote');
-        } else if (newValue === 1) {
-          console.log('Đã upvote');
-       } else {
-     console.log('Đã downvote');
-        }
-   } else {
-        alert('Có lỗi xảy ra: ' + (result.message || 'Vui lòng thử lại'));
-       }
-         } catch (error) {
-         console.error('Vote error:', error);
-     alert('Không thể vote. Vui lòng thử lại!');
-               }
-       });
-            });
-
-    // Share functionality
-        document.querySelectorAll('.share-btn').forEach(button => {
-           button.addEventListener('click', async function(e) {
-      e.preventDefault();
-  const url = this.dataset.url;
-                    
-        if (navigator.share) {
-            try {
-  await navigator.share({
-      title: '@Model.Question.Title',
-            url: url
-  });
-         } catch (error) {
-      if (error.name !== 'AbortError') {
-copyToClipboard(url, this);
-            }
-           }
-          } else {
-      copyToClipboard(url, this);
+                if (value === 1 && upBtn) {
+                    upBtn.classList.add('voted');
+                    upBtn.querySelector('svg').classList.add('text-orange-500');
+                    upBtn.querySelector('svg').classList.remove('text-slate-300');
+                } else if (value === -1 && downBtn) {
+                    downBtn.classList.add('voted');
+                    downBtn.querySelector('svg').classList.add('text-blue-500');
+                    downBtn.querySelector('svg').classList.remove('text-slate-300');
                 }
-          });
+            }
+
+            function removeHighlight(type, id) {
+                const upBtn = document.querySelector(`.vote-btn.vote-up[data-type="${type}"][data-id="${id}"]`);
+                const downBtn = document.querySelector(`.vote-btn.vote-down[data-type="${type}"][data-id="${id}"]`);
+
+                if (upBtn) {
+                    upBtn.classList.remove('voted');
+                    upBtn.querySelector('svg').classList.remove('text-orange-500');
+                    upBtn.querySelector('svg').classList.add('text-slate-300');
+                }
+                if (downBtn) {
+                    downBtn.classList.remove('voted');
+                    downBtn.querySelector('svg').classList.remove('text-blue-500');
+                    downBtn.querySelector('svg').classList.add('text-slate-300');
+                }
+            }
+
+            document.querySelectorAll('.vote-btn').forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+
+                    @if (User.Identity?.IsAuthenticated != true)
+                    {
+                            <text>
+                                alert('Vui lòng đăng nhập để vote!');
+                                return;
+                            </text>
+                    }
+
+                    const type = this.dataset.type;
+                    const id = this.dataset.id;
+                    const clickedValue = parseInt(this.dataset.value);
+                    const voteKey = `${type}-${id}`;
+                    const currentVote = userVotes[voteKey] || 0;
+
+                    let newValue = (currentVote === clickedValue) ? 0 : clickedValue;
+
+                    const scoreElement = document.querySelector(`.vote-score[data-type="${type}"][data-id="${id}"]`);
+
+                    try {
+                        const url = type === 'question'
+                            ? '@Url.Action("VoteQuestion", "Questions")'
+                            : '@Url.Action("VoteAnswer", "Answers")';
+
+                        const formData = new FormData();
+                        formData.append(type === 'question' ? 'questionId' : 'answerId', id);
+                        formData.append('value', newValue);
+
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                        if(token) formData.append('__RequestVerificationToken', token.value);
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            scoreElement.textContent = result.score;
+
+                            if (newValue === 0) {
+                                delete userVotes[voteKey];
+                                removeHighlight(type, id);
+                            } else {
+                                userVotes[voteKey] = newValue;
+                                removeHighlight(type, id);
+                                highlightVoteButton(type, id, newValue);
+                            }
+                        } else {
+                            alert('Có lỗi xảy ra: ' + (result.message || 'Vui lòng thử lại'));
+                        }
+                    } catch (error) {
+                        console.error('Vote error:', error);
+                        alert('Không thể vote. Vui lòng thử lại!');
+                    }
+                });
             });
 
-      function copyToClipboard(text, button) {
- navigator.clipboard.writeText(text).then(() => {
-         const originalText = button.innerHTML;
-   button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Đã sao chép';
-      setTimeout(() => {
-      button.innerHTML = originalText;
-               }, 2000);
-        }).catch(err => {
-      console.error('Không thể sao chép vào clipboard:', err);
-    alert('Lỗi sao chép. Vui lòng thử lại!');
- });
- }
+            // --- Share Logic ---
+            document.querySelectorAll('.share-btn').forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    const url = this.dataset.url;
 
-    // Sort answers functionality
-    const sortSelect = document.getElementById('sortAnswers');
-    if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-            const sortBy = this.value;
-            const url = new URL(window.location.href);
-            url.searchParams.set('sortBy', sortBy);
-            window.location.href = url.toString();
-        });
-    }
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: '@Model.Question.Title',
+                                url: url
+                            });
+                        } catch (error) {
+                            if (error.name !== 'AbortError') {
+                                copyToClipboard(url, this);
+                            }
+                        }
+                    } else {
+                        copyToClipboard(url, this);
+                    }
+                });
+            });
+
+            function copyToClipboard(text, button) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<span class="text-green-600 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Đã copy</span>';
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Không thể sao chép:', err);
+                    alert('Lỗi sao chép.');
+                });
+            }
+
+            // --- Sort Answers ---
+            const sortSelect = document.getElementById('sortAnswers');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const sortBy = this.value;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('sortBy', sortBy);
+                    window.location.href = url.toString();
+                });
+            }
         });
     </script>
 }

@@ -7,11 +7,7 @@ namespace VzOverFlow.Data
 {
     public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options)
-            : base(options)
-        {
-        }
-
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Question> Questions { get; set; } = default!;
         public DbSet<Answer> Answers { get; set; } = default!;
         public DbSet<Comment> Comments { get; set; } = default!;
@@ -23,6 +19,8 @@ namespace VzOverFlow.Data
         public DbSet<UserActivity> UserActivities { get; set; } = default!;
         public DbSet<UserBadge> UserBadges { get; set; } = default!;
         public DbSet<DailyMission> DailyMissions { get; set; } = default!;
+        public DbSet<UserFollow> UserFollows { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -35,6 +33,7 @@ namespace VzOverFlow.Data
             builder.Entity<IdentityUserLogin<int>>().ToTable("UserLogins");
             builder.Entity<IdentityUserToken<int>>().ToTable("UserTokens");
             builder.Entity<IdentityRoleClaim<int>>().ToTable("RoleClaims");
+            builder.Entity<UserFollow>().HasKey(f => new { f.FollowerId, f.FollowedUserId });
 
             builder.Entity<Question>()
                 .HasMany(q => q.Tags)
@@ -119,6 +118,17 @@ namespace VzOverFlow.Data
             builder.Entity<DailyMission>()
                 .HasIndex(d => new { d.UserId, d.Date })
                 .IsUnique();
+            builder.Entity<UserFollow>()
+                .HasOne(f => f.Follower)
+                .WithMany(u => u.Following)
+                .HasForeignKey(f => f.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<UserFollow>()
+                .HasOne(f => f.FollowedUser)
+                .WithMany(u => u.Followers)
+                .HasForeignKey(f => f.FollowedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

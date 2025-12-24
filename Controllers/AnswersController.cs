@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using VzOverFlow.Data;
+using VzOverFlow.Helpers;
 using VzOverFlow.Models;
 using VzOverFlow.Services;
 
@@ -14,12 +18,18 @@ namespace VzOverFlow.Controllers
         private readonly IQuestionService _questionService;
         private readonly IGamificationService _gamificationService;
         private readonly IVoteService _voteService;
+        private readonly AppDbContext _context;
 
-        public AnswersController(IQuestionService questionService, IGamificationService gamificationService, IVoteService voteService)
+        public AnswersController(
+            IQuestionService questionService,
+            IGamificationService gamificationService,
+            IVoteService voteService,
+            AppDbContext context)
         {
             _questionService = questionService;
             _gamificationService = gamificationService;
             _voteService = voteService;
+            _context = context;
         }
 
         public IActionResult Create(int questionId)
@@ -32,7 +42,24 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int questionId, Answer answer)
         {
-            // Remove navigation properties from validation
+            var userId = GetCurrentUserId();
+
+            var lastAnswer = await _context.Answers
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (lastAnswer != null && (DateTime.UtcNow - lastAnswer.CreatedAt).TotalSeconds < 30)
+            {
+                TempData["ErrorMessage"] = "Vui lòng đợi 30 giây giữa các lần trả lời.";
+                return RedirectToAction("Details", "Questions", new { id = questionId });
+            }
+            if (SpamChecker.ContainsSpam(answer.Body))
+            {
+                TempData["ErrorMessage"] = "Nội dung câu trả lời chứa từ khóa không phù hợp.";
+                return RedirectToAction("Details", "Questions", new { id = questionId });
+            }
+
             ModelState.Remove("User");
             ModelState.Remove("Question");
             ModelState.Remove("Votes");
@@ -44,10 +71,9 @@ namespace VzOverFlow.Controllers
                 return View(answer);
             }
 
-            answer.UserId = GetCurrentUserId();
+            answer.UserId = userId;
             var createdAnswer = await _questionService.AddAnswerAsync(questionId, answer);
 
-            // Award XP for answering
             await _gamificationService.AwardXpAsync(answer.UserId, ActivityType.AnswerQuestion, questionId, createdAnswer.Id);
 
             TempData["SuccessMessage"] = "Đã trả lời câu hỏi thành công! +15 XP";
@@ -57,11 +83,7 @@ namespace VzOverFlow.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var answer = await _questionService.GetAnswerByIdAsync(id);
-            if (answer == null)
-            {
-                return NotFound();
-            }
-
+            if (answer == null) return NotFound();
             return View(answer);
         }
 
@@ -69,21 +91,20 @@ namespace VzOverFlow.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Answer answer)
         {
-            if (id != answer.Id)
+            if (id != answer.Id) return BadRequest();
+
+            if (SpamChecker.ContainsSpam(answer.Body))
             {
-                return BadRequest();
+                ModelState.AddModelError("", "Nội dung chỉnh sửa chứa từ khóa không phù hợp.");
+                return View(answer);
             }
 
-            // Remove navigation properties from validation
             ModelState.Remove("User");
             ModelState.Remove("Question");
             ModelState.Remove("Votes");
             ModelState.Remove("Comments");
 
-            if (!ModelState.IsValid)
-            {
-                return View(answer);
-            }
+            if (!ModelState.IsValid) return View(answer);
 
             await _questionService.UpdateAnswerAsync(answer);
             return RedirectToAction("Details", "Questions", new { id = answer.QuestionId });
@@ -94,10 +115,7 @@ namespace VzOverFlow.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var answer = await _questionService.GetAnswerByIdAsync(id);
-            if (answer == null)
-            {
-                return NotFound();
-            }
+            if (answer == null) return NotFound();
 
             await _questionService.DeleteAnswerAsync(id);
             return RedirectToAction("Details", "Questions", new { id = answer.QuestionId });
@@ -122,11 +140,7 @@ namespace VzOverFlow.Controllers
         private int GetCurrentUserId()
         {
             var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(idClaim))
-            {
-                throw new InvalidOperationException("User is not authenticated.");
-            }
-
+            if (string.IsNullOrEmpty(idClaim)) throw new InvalidOperationException("User is not authenticated.");
             return int.Parse(idClaim);
         }
     }

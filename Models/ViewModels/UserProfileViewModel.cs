@@ -17,5 +17,7 @@ namespace VzOverFlow.Models.ViewModels
         public int QuestionVotesReceived { get; set; }
         public int AnswerVotesReceived { get; set; }
         public bool TwoFactorEnabled { get; set; }
+        public bool IsFollowing { get; set; }
+        public List<QuestionListItemViewModel> Questions { get; set; } = new List<QuestionListItemViewModel>();
     }
 }

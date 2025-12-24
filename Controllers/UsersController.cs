@@ -45,7 +45,10 @@ namespace VzOverFlow.Controllers
         [HttpGet("profile/{id:int}")]
         public async Task<IActionResult> Profile(int id)
         {
-            var profile = await _userService.GetUserProfileAsync(id);
+            var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int currentUserId = int.TryParse(currentUserIdStr, out var uid) ? uid : 0;
+
+            var profile = await _userService.GetUserProfileAsync(id, currentUserId);
             if (profile == null)
             {
                 return NotFound();

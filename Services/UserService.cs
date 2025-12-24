@@ -29,20 +29,25 @@ namespace VzOverFlow.Services
             }
 
             return await query
-                .OrderByDescending(u => u.CreatedAt)
+                .Include(u => u.Questions)
+                .Include(u => u.Answers)
+                .OrderByDescending(u => u.Reputation)
+                .ThenByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
 
-        public async Task<UserProfileViewModel?> GetUserProfileAsync(int id)
+        public async Task<UserProfileViewModel?> GetUserProfileAsync(int userId, int currentUserId = 0)
         {
             var user = await _context.Users
                 .AsNoTracking()
                 .Include(u => u.Questions)
                     .ThenInclude(q => q.Votes)
+                .Include(u => u.Questions)
+                    .ThenInclude(q => q.Tags)
                 .Include(u => u.Answers)
                     .ThenInclude(a => a.Votes)
                 .Include(u => u.Votes)
-                .FirstOrDefaultAsync(u => u.Id == id);
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
             {
@@ -51,6 +56,28 @@ namespace VzOverFlow.Services
 
             var questionVotesReceived = user.Questions.Sum(q => q.Votes.Sum(v => v.Value));
             var answerVotesReceived = user.Answers.Sum(a => a.Votes.Sum(v => v.Value));
+
+            bool isFollowing = false;
+            if (currentUserId > 0 && currentUserId != userId)
+            {
+                isFollowing = await _context.UserFollows.AnyAsync(f => f.FollowerId == currentUserId && f.FollowedUserId == userId);
+            }
+
+            var questionsList = user.Questions
+                .OrderByDescending(q => q.CreatedAt)
+                .Select(q => new QuestionListItemViewModel
+                {
+                    Id = q.Id,
+                    Title = q.Title,
+                    VoteScore = q.Votes.Sum(v => v.Value),
+                    AnswerCount = q.Answers?.Count ?? 0,
+                    ViewCount = q.ViewCount,
+                    CreatedAt = q.CreatedAt,
+                    UserName = user.UserName,
+                    UserReputation = user.Reputation,
+                    Tags = q.Tags.Select(t => t.Name).ToList()
+                })
+                .ToList();
 
             return new UserProfileViewModel
             {
@@ -65,7 +92,9 @@ namespace VzOverFlow.Services
                 AcceptedAnswerCount = user.Answers.Count(a => a.IsAccepted),
                 QuestionVotesReceived = questionVotesReceived,
                 AnswerVotesReceived = answerVotesReceived,
-                TwoFactorEnabled = user.TwoFactorEnabled
+                TwoFactorEnabled = user.TwoFactorEnabled,
+                IsFollowing = isFollowing,
+                Questions = questionsList
             };
         }
 

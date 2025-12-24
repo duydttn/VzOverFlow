@@ -52,11 +52,13 @@ namespace VzOverFlow.Services
                     Id = q.Id,
                     Title = q.Title,
                     AnswerCount = q.Answers.Count,
+                    BodyPreview = q.Body.Length > 200 ? q.Body.Substring(0, 200) + "..." : q.Body,
                     VoteScore = q.Votes.Sum(v => (int?)v.Value) ?? 0,
                     ViewCount = q.ViewCount,
                     UserName = q.User.UserName,
                     CreatedAt = q.CreatedAt,
-                    Tags = q.Tags.Select(t => t.Name).ToList()
+                    Tags = q.Tags.Select(t => t.Name).ToList(),
+                    UserReputation = q.User.Reputation
                 })
                 .ToListAsync();
 

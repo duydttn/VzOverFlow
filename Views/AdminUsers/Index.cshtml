@@ -1,67 +1,96 @@
 @model IEnumerable<VzOverFlow.Models.User>
 @{
     ViewData["Title"] = "Quản lý người dùng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-semibold text-slate-900">
-        Quản lý người dùng
-    </h1>
-    <span class="text-xs text-slate-500">
-        Chỉ Admin mới truy cập được trang này
-    </span>
-</div>
+<div id="mainbar-full" class="w100">
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-        @TempData["SuccessMessage"]
+    <div class="d-flex ai-center jc-space-between mb24 border-bottom pb12">
+        <h1 class="fs-headline1 mb0">Quản lý người dùng</h1>
+        <span class="fs-caption fc-light d-none sm:d-block">
+            Chỉ Admin mới truy cập được trang này
+        </span>
     </div>
-}
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-        @TempData["ErrorMessage"]
-    </div>
-}
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="s-notice s-notice__success mb24" role="status">
+            <div class="d-flex ai-center">
+                <svg aria-hidden="true" class="svg-icon iconCheckmark" width="18" height="18" viewBox="0 0 18 18"><path d="M15.41 3.59 7 12 2.59 7.59 1.17 9l5.83 5.83 9.83-9.83-1.42-1.41Z"></path></svg>
+                <div class="ml8">@TempData["SuccessMessage"]</div>
+            </div>
+        </div>
+    }
 
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-    <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
-            <tr>
-                <th class="px-4 py-2 text-left">Id</th>
-                <th class="px-4 py-2 text-left">UserName</th>
-                <th class="px-4 py-2 text-left">Email</th>
-                <th class="px-4 py-2 text-left">Reputation</th>
-                <th class="px-4 py-2 text-left">Ngày tạo</th>
-                <th class="px-4 py-2 text-center">Action</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-        @foreach (var u in Model)
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="s-notice s-notice__danger mb24" role="status">
+            <div class="d-flex ai-center">
+                <svg aria-hidden="true" class="svg-icon iconClear" width="18" height="18" viewBox="0 0 18 18"><path d="M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41Z"></path></svg>
+                <div class="ml8">@TempData["ErrorMessage"]</div>
+            </div>
+        </div>
+    }
+
+    <div class="s-table-container bg-white p0 bar-md bs-sm border bc-black-100">
+        <table class="s-table s-table__stripes w100">
+            <thead>
+                <tr>
+                    <th scope="col" class="s-table--cell">Id</th>
+                    <th scope="col" class="s-table--cell">UserName</th>
+                    <th scope="col" class="s-table--cell">Email</th>
+                    <th scope="col" class="s-table--cell">Reputation</th>
+                    <th scope="col" class="s-table--cell">Ngày tạo</th>
+                    <th scope="col" class="s-table--cell ta-right">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td class="s-table--cell va-middle">
+                            <span class="fc-light fs-caption">#@u.Id</span>
+                        </td>
+                        <td class="s-table--cell va-middle">
+                            <div class="d-flex ai-center gap8">
+                                <div class="s-avatar s-avatar__24">
+                                    <img class="s-avatar--image" src="https://api.dicebear.com/7.x/avataaars/svg?seed=@u.UserName" alt="@u.UserName" />
+                                </div>
+                                <span class="fw-bold fc-dark">@u.UserName</span>
+                            </div>
+                        </td>
+                        <td class="s-table--cell va-middle">
+                            @u.Email
+                        </td>
+                        <td class="s-table--cell va-middle">
+                            <span class="fw-bold fc-black-600">@u.Reputation</span>
+                        </td>
+                        <td class="s-table--cell va-middle">
+                            <span class="fc-light fs-caption" title="@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")">
+                                @u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                        </td>
+                        <td class="s-table--cell va-middle ta-right">
+                            <form method="post" asp-action="DeleteUser" asp-route-id="@u.Id"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng @u.UserName? Hành động này không thể hoàn tác.');"
+                                  class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="s-btn s-btn__danger s-btn__xs s-btn__outlined ws-nowrap" title="Xóa người dùng này">
+                                    Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
         {
-            <tr class="hover:bg-slate-50">
-                <td class="px-4 py-2">@u.Id</td>
-                <td class="px-4 py-2">@u.UserName</td>
-                <td class="px-4 py-2">@u.Email</td>
-                <td class="px-4 py-2">@u.Reputation</td>
-                <td class="px-4 py-2">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                <td class="px-4 py-2 text-center">
-                    <form method="post" asp-action="DeleteUser" asp-route-id="@u.Id" 
-                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng @u.UserName?');" 
-                          class="inline">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" 
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors">
-                            Xóa
-                        </button>
-                    </form>
-                </td>
-            </tr>
+            <div class="p24 ta-center fc-light fs-body2">
+                Không tìm thấy người dùng nào.
+            </div>
         }
-        </tbody>
-    </table>
+    </div>
 </div>
-
-
