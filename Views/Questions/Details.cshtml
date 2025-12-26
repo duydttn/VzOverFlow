@@ -9,7 +9,7 @@
 
 <style>
     .vote-btn.voted {
-        background-color: rgb(224 242 254); /* Màu nền khi đã vote */
+        background-color: rgb(224 242 254); 
     }
 
     .vote-btn svg {
@@ -20,18 +20,16 @@
         transform: scale(0.9);
     }
 
-    /* Định dạng hiển thị Code */
     .prose pre {
-        background-color: #1e293b; /* Nền tối cho code */
+        background-color: #1e293b;
         color: #e2e8f0;
         padding: 1rem;
         border-radius: 0.5rem;
-        overflow-x: auto; /* Thanh cuộn ngang nếu code dài */
+        overflow-x: auto;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.875em;
         margin-bottom: 1.5em;
     }
-    /* Xử lý ảnh trong bài viết */
     .prose img {
         max-width: 100%;
         height: auto;
@@ -111,7 +109,14 @@
                 </div>
 
                 @using VzOverFlow.Helpers <div class= "prose prose-slate max-w-none text-slate-800 mb-8 leading-7 text-[15px] break-words" >
-                    @Html.Raw(MarkdownHelper.ToHtml(question.Body))
+                    @if (!string.IsNullOrEmpty(question.Body) && question.Body.Contains("```"))
+                    {
+                        @Html.Raw(MarkdownHelper.ToHtml(question.Body))
+                    }
+                    else
+                    {
+                        @Html.Raw(question.Body)
+                    }
                 </div>
 
                 <div class="flex flex-wrap gap-2 mb-8">
@@ -232,7 +237,14 @@
 
                         <div class="flex-1 min-w-0 overflow-hidden">
                             <div class="prose prose-slate max-w-none text-slate-800 mb-6 text-[15px] break-words">
-                                @Html.Raw(MarkdownHelper.ToHtml(answer.Body))
+                                @if (!string.IsNullOrEmpty(answer.Body) && answer.Body.Contains("```"))
+                                {
+                                    @Html.Raw(MarkdownHelper.ToHtml(answer.Body))
+                                }
+                                else
+                                {
+                                    @Html.Raw(answer.Body)
+                                }
                             </div>
 
                             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

@@ -142,7 +142,6 @@ namespace VzOverFlow.Controllers
                 return NotFound();
             }
 
-            // Generate new authenticator key if requested and 2FA is not enabled
             if (generateKey && string.IsNullOrEmpty(user.AuthenticatorKey) && !user.TwoFactorEnabled)
             {
                 user.AuthenticatorKey = _authenticatorService.GenerateAuthenticatorKey();
@@ -157,7 +156,6 @@ namespace VzOverFlow.Controllers
                 StatusMessage = TempData["StatusMessage"] as string
             };
 
-            // Only show QR code and key if 2FA is NOT enabled yet (setup mode)
             if (!user.TwoFactorEnabled && !string.IsNullOrEmpty(user.AuthenticatorKey) && !string.IsNullOrEmpty(user.Email))
             {
                 model.AuthenticatorKey = user.AuthenticatorKey;
@@ -213,7 +211,7 @@ namespace VzOverFlow.Controllers
                 Email = email,
                 CreatedAt = DateTime.UtcNow,
                 TwoFactorEnabled = false,
-                EmailConfirmed = false // Email chưa được xác thực
+                EmailConfirmed = false
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -223,10 +221,8 @@ namespace VzOverFlow.Controllers
                 return View(model);
             }
 
-            // Gửi OTP để xác thực email
             await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.EmailVerification);
      
-            // Lưu UserId vào TempData để verify
             TempData["PendingUserId"] = user.Id;
             TempData["PendingUserEmail"] = user.Email;
             TempData["InfoMessage"] = "Một mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và nhập mã để hoàn tất đăng ký.";
