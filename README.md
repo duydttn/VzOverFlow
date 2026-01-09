@@ -22,7 +22,7 @@ dotnet restore
 dotnet ef database update
 dotnet run
 ```
-Ứng dụng mặc định chạy tại `https://localhost:5001`.
+Ứng dụng mặc định chạy tại `https://localhost:5142`.
 
 ## Yêu cầu hệ thống
 
