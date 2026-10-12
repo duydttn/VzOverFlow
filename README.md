@@ -68,7 +68,7 @@ Cập nhật file `appsettings.json` để sử dụng tính năng gửi email q
 dotnet ef database update
 dotnet run
 ```
-Truy cập: `https://localhost:5001`
+Truy cập: `https://localhost:5142`
 
 ---
 
