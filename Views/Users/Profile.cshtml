@@ -1,13 +1,13 @@
 ﻿@model VzOverFlow.Models.ViewModels.UserProfileViewModel
 @{
     ViewData["Title"] = "Hồ sơ " + Model.UserName;
-    var avatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={Model.UserName}";
+    var avatarUrl = !string.IsNullOrEmpty(Model.AvatarUrl) ? Model.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Model.UserName}";
     var isOwner = User.Identity.IsAuthenticated && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.Id.ToString();
 }
 
 <div class="mb-6 flex items-start justify-between gap-4">
     <div class="flex items-center gap-4">
-        <img src="@avatarUrl" alt="@Model.UserName" class="h-16 w-16 rounded-full bg-white border border-slate-200" />
+        <img src="@avatarUrl" alt="@Model.UserName" class="h-16 w-16 rounded-full bg-white border border-slate-200 object-cover" />
         <div>
             <h1 class="text-2xl font-bold text-slate-900 mb-1">
                 @Model.UserName
@@ -35,26 +35,35 @@
                 }
             </button>
         }
-        else if (isOwner)
-        {
-            <a asp-controller="Users" asp-action="AccountSettings"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-colors border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
-                ⚙ Cài đặt
-            </a>
-        }
-
         <div class="text-right hidden sm:block">
             <div class="text-xs text-slate-500">Reputation</div>
             <div class="text-2xl font-bold text-amber-600">@Model.Reputation</div>
-            <div class="text-[11px] text-slate-500">
+            
+            @* Experience Bar *@
+            @{
+                int currentXp = Model.ExperiencePoints;
+                int level = (currentXp / 1000) + 1;
+                int xpProgress = currentXp % 1000;
+                int progressPercent = xpProgress / 10;
+            }
+            <div class="mt-2 w-48 ml-auto">
+                <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+                    <span class="font-bold text-blue-600">Level @level</span>
+                    <span>@xpProgress / 1000 XP</span>
+                </div>
+                <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                    <div class="h-full bg-blue-500 transition-premium" style="width: @progressPercent%"></div>
+                </div>
+            </div>
+
+            <div class="text-[11px] text-slate-500 mt-2">
                 Votes nhận: <span class="font-semibold text-slate-700">@(Model.AnswerVotesReceived + Model.QuestionVotesReceived)</span>
             </div>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <section class="lg:col-span-2 space-y-6">
+<div class="space-y-6">
 
         <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
             <h2 class="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide">
@@ -80,12 +89,54 @@
             </div>
         </div>
 
+        @if (Model.Badges != null && Model.Badges.Any())
+        {
+            <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                     <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Huy hiệu đã đạt</h2>
+                     <span class="text-xs text-slate-500">@Model.Badges.Count() huy hiệu</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var badge in Model.Badges.Take(6))
+                    {
+                        @await Html.PartialAsync("_Badge", badge)
+                    }
+                    
+                    @if (Model.Badges.Count() > 6)
+                    {
+                        <div id="extra-badges" class="contents hidden">
+                             @foreach (var badge in Model.Badges.Skip(6))
+                            {
+                                @await Html.PartialAsync("_Badge", badge)
+                            }
+                        </div>
+                        
+                        <button id="btn-show-badges" data-count="@(Model.Badges.Count() - 6)"
+                                class="px-3 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full border border-blue-200 transition-colors h-fit my-auto">
+                            +@(Model.Badges.Count() - 6) huy hiệu khác...
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
         <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm text-sm text-slate-600">
-            <h2 class="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide">Giới thiệu</h2>
-            <p>
-                Thành viên tích cực của cộng đồng VzOverFlow.
-                (Phần này có thể mở rộng để user tự viết bio sau này).
-            </p>
+            <div class="flex items-center justify-between mb-3">
+                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Giới thiệu</h2>
+                 @if (isOwner && string.IsNullOrEmpty(Model.Bio))
+                 {
+                     <a asp-controller="Users" asp-action="AccountSettings" class="text-xs text-blue-600 hover:underline">Thêm giới thiệu</a>
+                 }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <div class="whitespace-pre-line text-slate-700">@Model.Bio</div>
+            }
+            else
+            {
+                 <p class="italic text-slate-400">Thành viên này chưa viết giới thiệu.</p>
+            }
         </div>
 
         <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
@@ -150,34 +201,102 @@
             }
         </div>
 
-    </section>
+        <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                    Câu trả lời gần đây
+                </h2>
+                <span class="text-xs text-slate-500">@Model.Answers?.Count() hiển thị</span>
+            </div>
 
-    <aside class="space-y-4">
+            @if (Model.Answers != null && Model.Answers.Any())
+            {
+                <div class="space-y-4">
+                    @foreach (var a in Model.Answers)
+                    {
+                        <div class="flex items-start gap-4 border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                            <div class="flex flex-col gap-1 min-w-[50px]">
+                                <div class="px-1.5 py-0.5 rounded bg-slate-100 text-center border border-slate-200 @(a.IsAccepted ? "bg-green-50 border-green-200 text-green-700" : "")">
+                                    <div class="text-xs font-semibold">@a.VoteScore</div>
+                                    <div class="text-[9px] @(a.IsAccepted ? "text-green-600" : "text-slate-500")">votes</div>
+                                </div>
+                            </div>
 
-        @if (isOwner)
-        {
-            @await Html.PartialAsync("_ReputationCard", Model)
-            @await Html.PartialAsync("_GamificationPanel", Model)
-        }
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium mb-1 line-clamp-2">
+                                    <a asp-controller="Questions" asp-action="Details" asp-route-id="@a.QuestionId" asp-fragment="answer-@a.Id"
+                                       class="text-blue-600 hover:text-blue-800 hover:underline">
+                                        @a.QuestionTitle
+                                    </a>
+                                </h3>
+                                <div class="text-[11px] text-slate-500 line-clamp-2 mb-2">
+                                    @Html.Raw(a.BodyPreview)
+                                </div>
+                                <div class="flex justify-end text-[11px] text-slate-400">
+                                    <span title="@a.CreatedAt.ToString("dd/MM/yyyy HH:mm")">
+                                        Trả lời vào @a.CreatedAt.ToString("dd/MM/yyyy")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-6 text-slate-400 text-sm italic border border-dashed border-slate-200 rounded">
+                    Người dùng này chưa có câu trả lời nào.
+                </div>
+            }
+        </div>
 
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-xs text-amber-900">
-            <h2 class="text-sm font-semibold mb-2 flex items-center gap-1">
+</div>
+
+@section RightSidebar {
+    @if (isOwner)
+    {
+        @await Html.PartialAsync("_ReputationCard", Model)
+        @await Html.PartialAsync("_GamificationPanel", Model)
+    }
+
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span class="bg-amber-100 text-amber-600 p-1 rounded-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                 </svg>
-                Reputation là gì?
-            </h2>
-            <p class="mb-2 opacity-90">
+            </span>
+            Reputation là gì?
+        </h2>
+        <div class="text-xs text-slate-600 space-y-3">
+            <p>
                 Reputation (Điểm uy tín) là thước đo mức độ đóng góp và sự tin cậy của cộng đồng dành cho bạn.
             </p>
-            <ul class="list-disc list-inside space-y-1 opacity-90 ml-1">
-                <li><strong class="text-amber-700">+10</strong> khi câu trả lời được vote up</li>
-                <li><strong class="text-amber-700">+15</strong> khi câu trả lời được chấp nhận</li>
-                <li><strong class="text-amber-700">-2</strong> khi bị vote down</li>
-            </ul>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center border-b border-slate-50 pb-1">
+                    <span>Đăng câu hỏi</span>
+                    <strong class="text-green-600">+2</strong>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-50 pb-1">
+                    <span>Đăng câu trả lời</span>
+                    <strong class="text-green-600">+3</strong>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-50 pb-1">
+                    <span>Nhận Vote Up</span>
+                    <strong class="text-green-600">+1</strong>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-50 pb-1">
+                    <span>Bị Vote Down</span>
+                    <strong class="text-red-500">-1</strong>
+                </div>
+                 <div class="flex justify-between items-center">
+                    <span>Chia sẻ bài viết</span>
+                    <strong class="text-green-600">+1</strong>
+                </div>
+            </div>
         </div>
-    </aside>
-</div>
+    </div>
+}
 
 @section Scripts {
     <script>
@@ -208,5 +327,20 @@
                 btn.classList.remove('opacity-70', 'cursor-not-allowed');
             }
         });
+
+        // Toggle Badges Logic
+        const btnBadge = document.getElementById('btn-show-badges');
+        const extras = document.getElementById('extra-badges');
+        if(btnBadge && extras) {
+            btnBadge.addEventListener('click', () => {
+                extras.classList.toggle('hidden');
+                if (extras.classList.contains('hidden')) {
+                    const count = btnBadge.dataset.count;
+                    btnBadge.textContent = '+' + count + ' huy hiệu khác...';
+                } else {
+                    btnBadge.textContent = 'Thu gọn';
+                }
+            });
+        }
     </script>
 }

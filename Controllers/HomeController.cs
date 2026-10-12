@@ -15,20 +15,20 @@ namespace VzOverFlow.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IQuestionService _questionService;
+        private readonly IQueryService _queryService;
         private readonly IUserService _userService;
         private readonly AppDbContext _context;
         private readonly IGamificationService _gamificationService;
 
         public HomeController(
             ILogger<HomeController> logger,
-            IQuestionService questionService,
+            IQueryService queryService,
             IUserService userService,
             AppDbContext context,
             IGamificationService gamificationService)
         {
             _logger = logger;
-            _questionService = questionService;
+            _queryService = queryService;
             _userService = userService;
             _context = context;
             _gamificationService = gamificationService;
@@ -36,13 +36,14 @@ namespace VzOverFlow.Controllers
 
         public async Task<IActionResult> Index(string? search, string? tag, string? sort)
         {
-            var model = await _questionService.GetQuestionsAsync(search, tag, sort);
+            sort ??= "trending";
+            var model = await _queryService.GetQuestionsAsync(search, tag, sort);
             return View(model);
         }
 
         public async Task<IActionResult> Leaderboard()
         {
-            var model = await _userService.GetLeaderboardAsync(20);
+            var model = await _userService.GetLeaderboardAsync(100);
             return View(model);
         }
 
@@ -127,47 +128,65 @@ namespace VzOverFlow.Controllers
 
         private static List<BadgeStatusViewModel> BuildBadges(UserProfileViewModel profile)
         {
-            var definitions = new[]
-            {
-                new BadgeStatusViewModel
-                {
-                    Tier = "🥇 Vàng",
-                    Name = "Legendary",
-                    Description = "Đạt 1000 reputation.",
-                    Target = 1000,
-                    Progress = profile.Reputation,
-                    RewardXp = 150
-                },
-                new BadgeStatusViewModel
-                {
-                    Tier = "🥈 Bạc",
-                    Name = "Helpful",
-                    Description = "Trả lời 25 câu hỏi.",
-                    Target = 25,
-                    Progress = profile.AnswerCount,
-                    RewardXp = 80
-                },
-                new BadgeStatusViewModel
-                {
-                    Tier = "🥈 Bạc",
-                    Name = "Accepted Mentor",
-                    Description = "Có 5 câu trả lời được chấp nhận.",
-                    Target = 5,
-                    Progress = profile.AcceptedAnswerCount,
-                    RewardXp = 60
-                },
-                new BadgeStatusViewModel
-                {
-                    Tier = "🥉 Đồng",
-                    Name = "Supporter",
-                    Description = "Vote ít nhất 10 lần cho câu hỏi/câu trả lời.",
-                    Target = 10,
-                    Progress = profile.VoteCount,
-                    RewardXp = 40
-                }
-            };
+            var userBadges = profile.Badges.ToHashSet();
+            var allBadges = Enum.GetValues<BadgeType>().ToList();
+            var result = new List<BadgeStatusViewModel>();
 
-            return definitions.ToList();
+            foreach (var type in allBadges)
+            {
+                var meta = Helpers.BadgeHelper.GetMetadata(type);
+                var isEarned = userBadges.Contains(type);
+                int progress = 0;
+                int target = 1;
+                
+                switch (type)
+                {
+                    case BadgeType.Curious: target = 1; progress = profile.QuestionCount; break;
+                    case BadgeType.Inquisitive: target = 25; progress = profile.QuestionCount; break;
+                    case BadgeType.Questioner: target = 100; progress = profile.QuestionCount; break;
+                    
+                    case BadgeType.Teacher: target = 1; progress = profile.AnswerCount; break;
+                    case BadgeType.Educator: target = 30; progress = profile.AnswerCount; break;
+                    case BadgeType.Scholar: target = 150; progress = profile.AnswerCount; break;
+
+                    case BadgeType.Supporter: target = 20; progress = profile.VoteCount; break;
+                    case BadgeType.Critic: target = 200; progress = profile.VoteCount; break;
+                    case BadgeType.Judge: target = 1000; progress = profile.VoteCount; break;
+
+                    case BadgeType.NiceAnswer: target = 10; progress = 0; break; 
+                    case BadgeType.GoodAnswer: target = 50; progress = 0; break;
+                    case BadgeType.GreatAnswer: target = 100; progress = 0; break;
+
+                    case BadgeType.Accepted: target = 1; progress = profile.AcceptedAnswerCount > 0 ? 1 : 0; break;
+
+                    case BadgeType.Enthusiast: target = 7; progress = 0; break; 
+                    case BadgeType.Dedicated: target = 60; progress = 0; break;
+                    case BadgeType.Fanatic: target = 365; progress = 0; break;
+
+                    case BadgeType.Popular: target = 500; progress = 0; break;
+                    case BadgeType.Famous: target = 5000; progress = 0; break;
+                }
+
+                if (isEarned) progress = target;
+                if (progress > target) progress = target;
+
+                result.Add(new BadgeStatusViewModel
+                {
+                    Tier = meta.Tier == Helpers.BadgeTier.Gold ? "🥇 Vàng" : 
+                           meta.Tier == Helpers.BadgeTier.Silver ? "🥈 Bạc" : "🥉 Đồng",
+                    TierRaw = meta.Tier,
+                    Name = meta.Name,
+                    Description = meta.Description,
+                    Target = target,
+                    Progress = progress,
+                    RewardXp = meta.Tier == Helpers.BadgeTier.Gold ? 150 :
+                               meta.Tier == Helpers.BadgeTier.Silver ? 80 : 40,
+                    Achieved = isEarned,
+                    Icon = meta.Icon
+                });
+            }
+
+            return result.OrderByDescending(b => b.Achieved).ThenByDescending(b => b.RewardXp).ToList();
         }
 
         private int GetCurrentUserId()

@@ -3,7 +3,7 @@
 
 <article class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-blue-400 transition-all duration-200">
     <div class="flex gap-4 sm:gap-6">
-        <div class="flex flex-col items-end gap-2 min-w-[60px] sm:min-w-[80px] text-xs text-slate-600 shrink-0">
+        <div class="flex flex-col items-end gap-3 min-w-[70px] sm:min-w-[90px] text-xs text-slate-600 shrink-0">
             <div class="text-right">
                 <span class="font-semibold text-slate-900">@Model.VoteScore</span> votes
             </div>
@@ -38,13 +38,36 @@
                 </div>
 
                 <div class="flex items-center gap-2 text-xs ml-auto">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@Model.UserName" alt="@Model.UserName" class="w-5 h-5 rounded-full bg-white border border-slate-100">
+                    @{
+                        var avatarUrl = !string.IsNullOrEmpty(Model.AvatarUrl) ? Model.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Model.UserName}";
+                    }
+                    
+                    <div class="relative group">
+                        <div class="flex items-center gap-2">
+                            <img src="@avatarUrl" alt="@Model.UserName" class="w-8 h-8 rounded-full bg-white border-2 border-slate-200 object-cover shadow-sm"/>
+                            
+                            <div class="flex flex-col min-w-[60px]">
+                                <a asp-controller="Users" asp-action="Profile" asp-route-id="@Model.UserId" class="text-blue-600 hover:underline font-medium truncate max-w-[100px]">
+                                    @Model.UserName
+                                </a>
+                                <span class="font-bold text-slate-500 text-[10px]">@Model.UserReputation</span>
+                            </div>
+                        </div>
 
-                    <a asp-controller="Users" asp-action="Profile" asp-route-id="@Model.Id" class="text-blue-600 hover:underline font-medium">
-                        @Model.UserName
-                    </a>
-                    <span class="font-bold text-slate-500 text-[10px]">@Model.UserReputation</span>
-                    <span class="text-slate-400">@Model.CreatedAt.ToString("dd/MM")</span>
+                        <!-- Mini Card on Hover - Positioned relative to the group -->
+                        <div class="absolute bottom-full right-0 mb-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-50 pointer-events-none">
+                            @await Html.PartialAsync("_UserMiniCard", new VzOverFlow.Models.ViewModels.UserMiniCardViewModel 
+                            { 
+                                UserId = Model.UserId, 
+                                UserName = Model.UserName, 
+                                AvatarUrl = Model.AvatarUrl, 
+                                UserReputation = Model.UserReputation,
+                                Bio = null // Bio not available in Question listing projection usually, checks needed
+                            })
+                        </div>
+                    </div>
+                    
+                    <span class="text-slate-400 border-l border-slate-200 pl-2 ml-1">@Model.CreatedAt.ToString("dd/MM")</span>
                 </div>
             </div>
         </div>

@@ -41,26 +41,51 @@ else
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @foreach (var badge in Model.Badges)
         {
-            var borderClass = badge.Tier.Contains("🥇") ? "border-yellow-300" :
-                              badge.Tier.Contains("🥈") ? "border-slate-200" : "border-amber-200";
-            <section class="bg-white border @borderClass rounded-lg p-4 shadow-sm text-xs">
-                <div class="flex items-center justify-between mb-2">
-                    <div>
-                        <h2 class="text-sm font-semibold text-slate-900">@badge.Tier - @badge.Name</h2>
-                        <p class="text-slate-600">@badge.Description</p>
+            // Map Helper Tier to CSS class
+            var tierClass = "badge-bronze";
+            if (badge.TierRaw == VzOverFlow.Helpers.BadgeTier.Gold) tierClass = "badge-gold";
+            else if (badge.TierRaw == VzOverFlow.Helpers.BadgeTier.Silver) tierClass = "badge-silver";
+
+            var bgClass = badge.Achieved ? tierClass + " badge-premium" : "bg-white border " + (tierClass == "badge-gold" ? "border-amber-200" : tierClass=="badge-silver" ? "border-slate-200" : "border-orange-200");
+             var textClass = badge.Achieved ? "text-white" : "text-slate-900";
+             var subTextClass = badge.Achieved ? "text-white/80" : "text-slate-500";
+             
+             // Custom override for non-achieved to keep them clean
+             if(!badge.Achieved) { bgClass = "bg-white border border-slate-200"; }
+            
+            <section class="@bgClass rounded-lg p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+                 @if(badge.Achieved) {
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50"></div>
+                 }
+                
+                <div class="flex items-center justify-between mb-3 relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="text-3xl">@badge.Icon</div>
+                        <div>
+                            <h2 class="text-base font-bold @textClass">@badge.Name</h2>
+                            <span class="text-xs font-semibold uppercase tracking-wider opacity-80 @textClass">@badge.Tier</span>
+                        </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-[11px] text-slate-500">Thưởng</div>
-                        <div class="text-slate-900 font-semibold">+@badge.RewardXp XP</div>
+                        <div class="text-[10px] uppercase font-bold @subTextClass">Thưởng</div>
+                        <div class="text-lg font-black @textClass">+@badge.RewardXp XP</div>
                     </div>
                 </div>
-                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mb-2">
-                    <div class="h-full @(badge.Achieved ? "bg-emerald-500" : "bg-blue-400")"
-                         style="width:@(badge.Completion * 100)%"></div>
-                </div>
-                <div class="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Tiến độ: @badge.Progress/@badge.Target</span>
-                    <span>@(badge.Achieved ? "Đã mở khoá" : $"Cần {badge.Target - badge.Progress} nữa")</span>
+                
+                <p class="text-sm mb-4 relative z-10 @subTextClass">@badge.Description</p>
+
+                <div class="relative z-10">
+                     <div class="flex items-center justify-between text-[11px] font-bold mb-1 @subTextClass">
+                        <span>Tiến độ</span>
+                        <span>@badge.Progress / @badge.Target</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-black/10 overflow-hidden backdrop-blur-sm">
+                        <div class="h-full @(badge.Achieved ? "bg-white" : "bg-blue-500") transition-all duration-500"
+                             style="width:@(Math.Min(100, (double)badge.Progress / badge.Target * 100))%"></div>
+                    </div>
+                     <div class="text-right mt-1 text-[10px] font-medium @subTextClass">
+                         @(badge.Achieved ? "Đã mở khoá!" : $"Cần {badge.Target - badge.Progress} nữa")
+                     </div>
                 </div>
             </section>
         }

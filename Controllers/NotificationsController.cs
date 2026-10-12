@@ -39,6 +39,7 @@ namespace VzOverFlow.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkAsRead()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);

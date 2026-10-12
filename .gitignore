@@ -34,3 +34,54 @@ wwwroot/css/index.css
 *.db-shm
 *.db-wal
 
+# --- repo-safety ---
+node_modules/
+**/node_modules/
+bin/
+obj/
+.vs/
+target/
+**/target/
+publish/
+installer/
+releases/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.exe
+*.msi
+*.zip
+*.rar
+*.7z
+*.log
+logs/
+*.user
+*cookie*.txt
+*cookies*.json
+*token*.txt
+*account*.txt
+*accounts*.json
+*proxy*.txt
+*proxies*.txt
+*.xlsx
+*.xls
+**/chrome-profiles/
+**/User Data/
+**/profiles/
+**/sessions/
+tmp-*
+.tmp-*
+
+# --- extra ---
+appsettings.Local.json
+users.txt
+wwwroot/images/avatars/
+wwwroot/uploads/

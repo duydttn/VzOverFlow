@@ -21,6 +21,9 @@ namespace VzOverFlow.Data
         public DbSet<DailyMission> DailyMissions { get; set; } = default!;
         public DbSet<UserFollow> UserFollows { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<ChatRoom> ChatRooms { get; set; } = default!;
+        public DbSet<ChatMessage> ChatMessages { get; set; } = default!;
+        public DbSet<AiConfig> AiConfigs { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -129,6 +132,24 @@ namespace VzOverFlow.Data
                 .WithMany(u => u.Followers)
                 .HasForeignKey(f => f.FollowedUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatRoom>()
+                .HasOne(r => r.CreatedBy)
+                .WithMany()
+                .HasForeignKey(r => r.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.Room)
+                .WithMany(r => r.Messages)
+                .HasForeignKey(m => m.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

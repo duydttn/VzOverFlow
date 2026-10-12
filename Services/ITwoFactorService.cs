@@ -10,4 +10,3 @@ namespace VzOverFlow.Services
         Task InvalidateCodesAsync(int userId, OtpPurpose purpose);
     }
 }
-

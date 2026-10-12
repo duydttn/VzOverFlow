@@ -11,6 +11,9 @@ namespace VzOverFlow.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginAt { get; set; }
         public string? AuthenticatorKey { get; set; }
+        public string? Bio { get; set; }
+        public string? AvatarUrl { get; set; }
+        public bool IsBanned { get; set; } = false;
 
         public ICollection<Question> Questions { get; set; } = new List<Question>();
         public ICollection<Answer> Answers { get; set; } = new List<Answer>();

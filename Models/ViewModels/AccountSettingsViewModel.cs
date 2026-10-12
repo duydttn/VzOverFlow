@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace VzOverFlow.Models.ViewModels
 {
@@ -14,8 +15,17 @@ namespace VzOverFlow.Models.ViewModels
         [Display(Name = "Email đăng nhập")]
         public string? Email { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Giới thiệu bản thân")]
+        public string? Bio { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Ảnh đại diện (URL)")]
+        public string? AvatarUrl { get; set; }
+
+        [Display(Name = "Tải ảnh lên")]
+        public IFormFile? AvatarFile { get; set; }
+
         public string? StatusMessage { get; set; }
     }
 }
-
-

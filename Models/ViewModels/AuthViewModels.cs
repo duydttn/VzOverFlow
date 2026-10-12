@@ -8,7 +8,7 @@ namespace VzOverFlow.Models.ViewModels
         [Display(Name = "Tên đăng nhập")]
         public string UserName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Email là bắt buộc để nhận mã OTP")]
+        [Required(ErrorMessage = "Email là bắt buộc")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
         [StringLength(200)]
         [Display(Name = "Email")]

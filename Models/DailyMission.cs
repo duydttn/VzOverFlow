@@ -6,9 +6,9 @@ namespace VzOverFlow.Models
     /// <summary>
     /// Track daily mission progress (resets every day)
     /// </summary>
- public class DailyMission
+    public class DailyMission
     {
-public int Id { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public int UserId { get; set; }
@@ -18,12 +18,12 @@ public int Id { get; set; }
 
         // Mission counters
         public int QuestionsAsked { get; set; } = 0;
-  public int AnswersGiven { get; set; } = 0;
-  public int VotesCast { get; set; } = 0;
+        public int AnswersGiven { get; set; } = 0;
+        public int VotesCast { get; set; } = 0;
 
         // XP earned today
         public int TotalXpToday { get; set; } = 0;
 
-      public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 using VzOverFlow.Models;
 
 namespace VzOverFlow.Data
@@ -11,71 +10,54 @@ namespace VzOverFlow.Data
     {
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
-            var context = serviceProvider.GetRequiredService<AppDbContext>();
-            if (await context.Users.AnyAsync())
-            {
-                return;
-            }
-
-            var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
 
-            const string adminRoleName = "Admin";
-            if (!await roleManager.RoleExistsAsync(adminRoleName))
+            // 1. Create Admin Role if not exists
+            if (!await roleManager.RoleExistsAsync("Admin"))
             {
-                await roleManager.CreateAsync(new IdentityRole<int>(adminRoleName));
+                await roleManager.CreateAsync(new IdentityRole<int>("Admin"));
             }
 
-            var admin = new User
+            // 2. Create User Role if not exists
+            if (!await roleManager.RoleExistsAsync("User"))
             {
-                UserName = "admin",
-                Email = "cloudblue1911@gmail.com",
-                Reputation = 1500,
-                CreatedAt = DateTime.UtcNow.AddMonths(-2),
-                TwoFactorEnabled = true
-            };
-            await userManager.CreateAsync(admin, "Duybe265");
-            await userManager.AddToRoleAsync(admin, adminRoleName);
+                await roleManager.CreateAsync(new IdentityRole<int>("User"));
+            }
 
-            var member = new User
-            {
-                UserName = "duy.nguyen",
-                Email = "duybe222@hotmeilll.com",
-                Reputation = 320,
-                CreatedAt = DateTime.UtcNow.AddMonths(-1),
-                TwoFactorEnabled = true
-            };
-            await userManager.CreateAsync(member, "Member@123");
+            // 3. Create Specific Admin User
+            string adminUsername = "adminnehehe";
+            string adminEmail = "bevanduy265@gmail.com";
+            string? adminPassword = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD");
 
-            var tags = new[]
+            var existingAdmin = await userManager.FindByNameAsync(adminUsername);
+            if (existingAdmin == null)
             {
-                new Tag { Name = "c#", Description = "Ngôn ngữ lập trình C#." },
-                new Tag { Name = "asp.net-core", Description = "Framework xây dựng web hiện đại." },
-                new Tag { Name = "entity-framework-core", Description = "ORM phổ biến trên .NET." }
-            };
+                if (string.IsNullOrWhiteSpace(adminPassword)) return;
 
-            var question = new Question
-            {
-                Title = "Làm sao tạo ứng dụng hỏi đáp như StackOverflow bằng ASP.NET Core?",
-                Body = "Mình muốn tạo clone đơn giản của StackOverflow với MVC + EF Core. Nên bắt đầu từ đâu?",
-                CreatedAt = DateTime.UtcNow.AddDays(-10),
-                User = admin,
-                Tags = new List<Tag> { tags[0], tags[1], tags[2] },
-                Answers = new List<Answer>
+                var adminUser = new User
                 {
-                    new()
-            {
-                        Body = "Bắt đầu từ việc thiết kế model domain (Question, Answer, Tag) rồi xây dựng controller/view.",
-                        User = member,
-                        CreatedAt = DateTime.UtcNow.AddDays(-9),
-                IsAccepted = true
-                    }
-                }
-            };
+                    UserName = adminUsername,
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow,
+                    Reputation = 99999
+                };
 
-            await context.Tags.AddRangeAsync(tags);
-            await context.Questions.AddAsync(question);
-            await context.SaveChangesAsync();
+                var result = await userManager.CreateAsync(adminUser, adminPassword);
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                }
+            }
+            else
+            {
+                // Ensure existing user has Admin role
+                if (!await userManager.IsInRoleAsync(existingAdmin, "Admin"))
+                {
+                    await userManager.AddToRoleAsync(existingAdmin, "Admin");
+                }
+            }
         }
     }
 }

@@ -9,32 +9,40 @@ using Microsoft.EntityFrameworkCore;
 using VzOverFlow.Data;
 using VzOverFlow.Helpers;
 using VzOverFlow.Models;
+using VzOverFlow.Models.ViewModels;
 using VzOverFlow.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace VzOverFlow.Controllers
 {
     public class QuestionsController : Controller
     {
         private readonly IQuestionService _questionService;
+        private readonly IQueryService _queryService;
         private readonly IGamificationService _gamificationService;
         private readonly IVoteService _voteService;
+        private readonly IReputationService _reputationService;
         private readonly AppDbContext _context;
 
         public QuestionsController(
             IQuestionService questionService,
+            IQueryService queryService,
             IGamificationService gamificationService,
             IVoteService voteService,
+            IReputationService reputationService,
             AppDbContext context)
         {
             _questionService = questionService;
+            _queryService = queryService;
             _gamificationService = gamificationService;
             _voteService = voteService;
+            _reputationService = reputationService;
             _context = context;
         }
 
         public async Task<IActionResult> Index(string? search, string? tag, string? sort)
         {
-            var model = await _questionService.GetQuestionsAsync(search, tag, sort);
+            var model = await _queryService.GetQuestionsAsync(search, tag, sort);
             return View(model);
         }
 
@@ -58,14 +66,21 @@ namespace VzOverFlow.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(new Question());
+            return View(new QuestionCreateViewModel());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Create(Question question, string? tags)
+        [EnableRateLimiting("fixed")]
+        public async Task<IActionResult> Create(QuestionCreateViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin câu hỏi.";
+                return View(model);
+            }
+
             var userId = GetCurrentUserId();
 
             var lastQuestion = await _context.Questions
@@ -76,45 +91,37 @@ namespace VzOverFlow.Controllers
             if (lastQuestion != null && (DateTime.UtcNow - lastQuestion.CreatedAt).TotalSeconds < 60)
             {
                 ModelState.AddModelError("", "Bạn thao tác quá nhanh. Vui lòng đợi 60 giây trước khi đặt câu hỏi tiếp theo.");
-                ViewBag.Tags = tags;
-                return View(question);
+                return View(model);
             }
-            if (SpamChecker.ContainsSpam(question.Title) || SpamChecker.ContainsSpam(question.Body))
+
+            var user = await _context.Users.FindAsync(userId);
+            int reputation = user?.Reputation ?? 0;
+
+            if (SpamChecker.ContainsSpam(model.Title, reputation) || SpamChecker.ContainsSpam(model.Body, reputation))
             {
                 ModelState.AddModelError("", "Nội dung câu hỏi chứa từ khóa không phù hợp. Vui lòng kiểm tra lại.");
-                ViewBag.Tags = tags;
-                return View(question);
-            }
-
-            ModelState.Remove("User");
-            ModelState.Remove("AcceptedAnswer");
-            ModelState.Remove("Answers");
-            ModelState.Remove("Comments");
-            ModelState.Remove("Tags");
-            ModelState.Remove("Votes");
-
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Tags = tags;
-                TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin câu hỏi.";
-                return View(question);
+                return View(model);
             }
 
             try
             {
-                question.UserId = userId;
-                var createdQuestion = await _questionService.CreateQuestionAsync(question, ParseTags(tags));
+                var question = new Question
+                {
+                    Title = model.Title,
+                    Body = model.Body,
+                    UserId = userId
+                };
 
-                await _gamificationService.AwardXpAsync(question.UserId, ActivityType.AskQuestion, createdQuestion.Id);
+                await _questionService.CreateQuestionAsync(question, ParseTags(model.Tags));
 
-                TempData["SuccessMessage"] = "Đã đăng câu hỏi thành công! +10 XP";
-                return RedirectToAction(nameof(Details), new { id = createdQuestion.Id });
+                TempData["SuccessMessage"] = "Đã đặt câu hỏi thành công! +20 XP";
+                return RedirectToAction(nameof(Details), new { id = question.Id });
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", $"Có lỗi xảy ra: {ex.Message}");
-                ViewBag.Tags = tags;
-                return View(question);
+                // _logger.LogError(ex, "Error creating question");
+                ModelState.AddModelError("", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.");
+                return View(model);
             }
         }
 
@@ -123,38 +130,52 @@ namespace VzOverFlow.Controllers
         {
             var question = await _questionService.GetQuestionEntityAsync(id);
             if (question == null) return NotFound();
-            ViewBag.Tags = string.Join(" ", question.Tags.Select(t => t.Name));
-            return View(question);
+            
+            if (question.UserId != GetCurrentUserId()) return Forbid();
+
+            var model = new QuestionEditViewModel
+            {
+                Id = question.Id,
+                Title = question.Title,
+                Body = question.Body,
+                Tags = string.Join(" ", question.Tags.Select(t => t.Name))
+            };
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Edit(int id, Question question, string? tags)
+        [EnableRateLimiting("fixed")]
+        public async Task<IActionResult> Edit(int id, QuestionEditViewModel model)
         {
-            if (id != question.Id) return BadRequest();
+            if (id != model.Id) return BadRequest();
 
-            if (SpamChecker.ContainsSpam(question.Title) || SpamChecker.ContainsSpam(question.Body))
+            if (!ModelState.IsValid) return View(model);
+
+            var userId = GetCurrentUserId();
+            
+            // Ownership check
+            var existingQuestion = await _questionService.GetQuestionEntityAsync(id);
+            if (existingQuestion == null) return NotFound();
+            if (existingQuestion.UserId != userId) return Forbid();
+
+            var user = await _context.Users.FindAsync(userId);
+            int reputation = user?.Reputation ?? 0;
+
+            if (SpamChecker.ContainsSpam(model.Title, reputation) || SpamChecker.ContainsSpam(model.Body, reputation))
             {
                 ModelState.AddModelError("", "Nội dung chỉnh sửa chứa từ khóa không phù hợp.");
-                ViewBag.Tags = tags;
-                return View(question);
+                return View(model);
             }
 
-            ModelState.Remove("User");
-            ModelState.Remove("AcceptedAnswer");
-            ModelState.Remove("Answers");
-            ModelState.Remove("Comments");
-            ModelState.Remove("Tags");
-            ModelState.Remove("Votes");
-
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Tags = tags;
-                return View(question);
-            }
-
-            await _questionService.UpdateQuestionAsync(question, ParseTags(tags));
+            existingQuestion.Title = model.Title;
+            existingQuestion.Body = model.Body;
+            // Note: _questionService.UpdateQuestionAsync usually takes Question entity.
+            // Be careful here. UpdateQuestionAsync updates tags too.
+            // Let's reuse existingQuestion and pass it.
+            
+            await _questionService.UpdateQuestionAsync(existingQuestion, ParseTags(model.Tags));
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -163,8 +184,43 @@ namespace VzOverFlow.Controllers
         [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
+            var question = await _context.Questions.FindAsync(id);
+            if (question == null) return NotFound();
+            
+            bool isAdmin = User.IsInRole("Admin");
+            if (question.UserId != GetCurrentUserId() && !isAdmin) return Forbid();
+
             await _questionService.DeleteQuestionAsync(id);
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CheckDuplicate([FromBody] CheckDuplicateRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title) && string.IsNullOrWhiteSpace(request.Body))
+            {
+                return BadRequest("Content required");
+            }
+
+            var similarQuestions = await _questionService.FindSimilarQuestionsAsync(request.Title ?? "", request.Body ?? "");
+            
+            var result = similarQuestions.Select(q => new 
+            {
+                id = q.Id,
+                title = q.Title,
+                answerCount = q.Answers.Count,
+                hasAcceptedAnswer = q.Answers.Any(a => a.IsAccepted),
+                url = Url.Action("Details", "Questions", new { id = q.Id })
+            });
+
+            return Json(result);
+        }
+
+        public class CheckDuplicateRequest
+        {
+            public string? Title { get; set; }
+            public string? Body { get; set; }
         }
 
         [HttpPost]
@@ -178,9 +234,10 @@ namespace VzOverFlow.Controllers
                 var newScore = await _voteService.VoteQuestionAsync(questionId, userId, value);
                 return Json(new { success = true, score = newScore });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return Json(new { success = false, message = ex.Message });
+                // _logger.LogError(ex, ...);
+                return Json(new { success = false, message = "Đã xảy ra lỗi hệ thống." });
             }
         }
 

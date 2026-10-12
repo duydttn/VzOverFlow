@@ -1,0 +1,18 @@
+@model VzOverFlow.Models.BadgeType
+@using VzOverFlow.Helpers
+
+@{
+    var metadata = BadgeHelper.GetMetadata(Model);
+    var tierClass = metadata.Tier switch
+    {
+        BadgeTier.Bronze => "badge-bronze",
+        BadgeTier.Silver => "badge-silver",
+        BadgeTier.Gold => "badge-gold",
+        _ => "badge-bronze"
+    };
+}
+
+<div class="badge-premium @tierClass" title="@metadata.Description">
+    <span class="text-base leading-none">@metadata.Icon</span>
+    <span>@metadata.Name</span>
+</div>

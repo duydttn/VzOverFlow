@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Chat Lobby";
+    var rooms = Model as IEnumerable<dynamic>;
+}
+
+<div class="mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-1">💬 Chat Rooms</h1>
+            <p class="text-sm text-slate-600">Trò chuyện trực tiếp với cộng đồng VzOverFlow</p>
+        </div>
+        <button onclick="document.getElementById('createRoomModal').classList.remove('hidden')"
+                class="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Tạo phòng mới
+        </button>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="mb-4 rounded-md bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    @if (rooms != null)
+    {
+        @foreach (var room in rooms)
+        {
+            <a asp-action="Room" asp-route-id="@room.Id"
+               class="bg-white border border-slate-200 rounded-lg p-4 hover:border-blue-400 hover:shadow-md transition-all group">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-slate-900 group-hover:text-blue-600 flex items-center gap-2">
+                        @if (room.Name == "VzOverFlow Lobby")
+                        {
+                            <span class="text-lg">🏠</span>
+                        }
+                        else
+                        {
+                            <span class="text-lg">💬</span>
+                        }
+                        @room.Name
+                    </h3>
+                    <span class="text-xs text-slate-400">@room.MessageCount tin nhắn</span>
+                </div>
+                <p class="text-sm text-slate-600 line-clamp-2 mb-3">
+                    @(room.Description ?? "Không có mô tả")
+                </p>
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span>Tạo bởi @room.CreatedByName</span>
+                    @if (room.LastActivity != null)
+                    {
+                        <span>Hoạt động gần đây</span>
+                    }
+                </div>
+            </a>
+        }
+    }
+</div>
+
+<!-- Create Room Modal -->
+<div id="createRoomModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-slate-900">Tạo phòng chat mới</h2>
+            <button onclick="document.getElementById('createRoomModal').classList.add('hidden')"
+                    class="text-slate-400 hover:text-slate-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form asp-action="Create" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Tên phòng *</label>
+                <input name="name" type="text" required maxlength="100"
+                       class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Ví dụ: JavaScript Developers" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Mô tả</label>
+                <textarea name="description" rows="3" maxlength="500"
+                          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Mô tả ngắn về phòng chat..."></textarea>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" 
+                        onclick="document.getElementById('createRoomModal').classList.add('hidden')"
+                        class="flex-1 rounded-md border border-slate-200 text-slate-700 px-4 py-2 text-sm hover:bg-slate-50">
+                    Hủy
+                </button>
+                <button type="submit"
+                        class="flex-1 rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700">
+                    Tạo phòng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

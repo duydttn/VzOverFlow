@@ -7,4 +7,3 @@ namespace VzOverFlow.Services
         Task SendAsync(string toEmail, string subject, string htmlBody);
     }
 }
-

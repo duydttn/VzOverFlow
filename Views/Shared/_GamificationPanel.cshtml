@@ -1,10 +1,11 @@
 ﻿@model VzOverFlow.Models.ViewModels.UserProfileViewModel
 @{
+    var mission = Model.TodayMission ?? new VzOverFlow.Models.DailyMission();
     var tasks = new[]
     {
-        new { Title = "Đặt 5 câu hỏi", Progress = Model.QuestionCount, Target = 5, Reward = 40, Icon = "💬" },
-        new { Title = "Trả lời 3 câu hỏi", Progress = Model.AnswerCount, Target = 3, Reward = 60, Icon = "✍️" },
-        new { Title = "Vote 10 lần", Progress = Model.VoteCount, Target = 10, Reward = 30, Icon = "👍" }
+        new { Title = "Đặt 5 câu hỏi", Progress = mission.QuestionsAsked, Target = 5, Reward = 40, Icon = "💬" },
+        new { Title = "Trả lời 3 câu hỏi", Progress = mission.AnswersGiven, Target = 3, Reward = 60, Icon = "✍️" },
+        new { Title = "Vote 10 lần", Progress = mission.VotesCast, Target = 10, Reward = 30, Icon = "👍" }
     };
 }
 
@@ -46,8 +47,13 @@
         }
     </ul>
 
-    <div class="rounded-md bg-slate-50 text-[11px] text-slate-600 px-3 py-2">
-        Hôm nay bạn đã nhận được tổng cộng
-        <span class="font-semibold text-slate-900">@Model.Reputation XP</span>. Tiếp tục đóng góp để mở thêm huy hiệu!
+    <div class="mt-4 rounded-lg bg-slate-50 text-[11px] text-slate-600 p-3 space-y-2.5 border border-slate-100">
+        <div class="flex items-center justify-between">
+            <span>Tích lũy kinh nghiệm:</span>
+            <span class="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">@Model.ExperiencePoints XP</span>
+        </div>
+        <div class="border-t border-slate-200 pt-2.5 text-[10px] text-slate-500 italic leading-relaxed">
+            💡 <strong>XP</strong> đo lường khối lượng hoạt động (chăm chỉ), còn <strong>Reputation</strong> đo lường chất lượng đóng góp (uy tín).
+        </div>
     </div>
 </section>

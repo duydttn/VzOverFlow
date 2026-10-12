@@ -9,7 +9,7 @@ namespace VzOverFlow.Models
         EnableTwoFactor = 1,
         DisableTwoFactor = 2,
         ChangePassword = 3,
-        EmailVerification = 4 // Xác th?c email khi ??ng ký
+        EmailVerification = 4
     }
 
     public class OneTimeCode
@@ -30,4 +30,3 @@ namespace VzOverFlow.Models
         public bool IsUsed { get; set; }
     }
 }
-

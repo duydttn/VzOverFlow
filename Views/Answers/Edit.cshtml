@@ -14,7 +14,7 @@
         <label asp-for="Body" class="block text-sm font-semibold text-slate-800 mb-1">
             Nội dung câu trả lời
         </label>
-        <textarea asp-for="Body" rows="10"
+        <textarea asp-for="Body" id="Body" rows="10"
                   class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
         <span asp-validation-for="Body" class="text-xs text-red-500"></span>
     </div>
@@ -28,3 +28,18 @@
         </button>
     </div>
 </form>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const easyMDE = new EasyMDE({ 
+                element: document.getElementById('Body'),
+                spellChecker: false,
+                toolbar: ["bold", "italic", "heading", "|", "quote", "code", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"],
+                minHeight: "300px"
+            });
+        });
+    </script>
+}

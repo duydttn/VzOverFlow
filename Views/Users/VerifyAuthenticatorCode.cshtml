@@ -45,6 +45,16 @@
                 class="w-full rounded-md bg-blue-600 text-white py-2 font-medium hover:bg-blue-700 transition-colors shadow-sm">
             Xác nhận
         </button>
+
+        <div class="pt-4 border-t border-slate-100 text-center">
+            <p class="text-[11px] text-slate-500 mb-2">Mất quyền truy cập vào app?</p>
+            <button type="submit" 
+                    asp-action="LoginWithEmailBackup" 
+                    formnovalidate
+                    class="text-blue-600 hover:underline font-medium text-xs">
+                Thử cách khác: Nhận mã qua Email
+            </button>
+        </div>
     </form>
 
     <div class="mt-6 pt-4 border-t border-slate-200">
@@ -58,9 +68,8 @@
         </ul>
     </div>
 
-    <p class="text-xs text-slate-500 mt-4 text-center">
-        Mất quyền truy cập vào app?
-        <a asp-action="Login" class="text-blue-600 hover:underline font-medium">Đăng nhập lại</a>
+    <p class="text-xs text-slate-500 mt-4 text-center text-[10px]">
+        Hoặc <a asp-action="Login" class="text-slate-400 hover:underline">Đăng nhập lại</a>
     </p>
 </div>
 

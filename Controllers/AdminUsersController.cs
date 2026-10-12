@@ -1,59 +1,104 @@
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VzOverFlow.Models;
+using VzOverFlow.Models.ViewModels;
+using VzOverFlow.Services;
 
 namespace VzOverFlow.Controllers
 {
-    [Route("admin/users")]
     [Authorize(Roles = "Admin")]
     public class AdminUsersController : Controller
     {
         private readonly UserManager<User> _userManager;
+        private readonly IUserService _userService;
 
-        public AdminUsersController(UserManager<User> userManager)
+        public AdminUsersController(UserManager<User> userManager, IUserService userService)
         {
             _userManager = userManager;
+            _userService = userService;
         }
 
-        [HttpGet("")]
-        public async Task<IActionResult> Index()
+        [HttpGet("/admin/users")]
+        public async Task<IActionResult> Index(string? search)
         {
-            var users = await _userManager.Users
-                .AsNoTracking()
-                .ToListAsync();
+            var stats = await _userService.GetAdminDashboardStatsAsync();
+            var users = await _userService.GetUsersAsync(search);
 
-            return View(users);
+            var model = new AdminUsersViewModel
+            {
+                Stats = stats,
+                Users = users,
+                SearchQuery = search
+            };
+
+            return View(model);
         }
 
-        [HttpPost("delete/{id}")]
+        [HttpPost("/admin/users/toggle-ban/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleBan(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null && currentUser.Id == id)
+            {
+                TempData["ErrorMessage"] = "Bạn không thể tự khóa chính mình.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var result = await _userService.ToggleUserBanAsync(id);
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Đã thay đổi trạng thái hoạt động của người dùng.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("/admin/users/reputation/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustReputation(int id, int amount)
+        {
+            await _userService.AdjustReputationAsync(id, amount);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("/admin/users/role/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeRole(int id, string role)
+        {
+            await _userService.ChangeUserRoleAsync(id, role);
+            TempData["SuccessMessage"] = "Đã cập nhật quyền hạn của người dùng.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("/admin/users/delete/{id}")]
+        [ActionName("DeleteUser")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser?.Id == id)
+            if (currentUser != null && currentUser.Id == id)
             {
-                TempData["ErrorMessage"] = "B?n kh�ng th? x�a ch�nh t�i kho?n c?a m�nh.";
+                TempData["ErrorMessage"] = "Bạn không thể tự xóa chính mình.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null)
+            var result = await _userService.DeleteUserAsync(id);
+            if (result)
             {
-                TempData["ErrorMessage"] = "Kh�ng t�m th?y ng??i d�ng.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var result = await _userManager.DeleteAsync(user);
-            if (result.Succeeded)
-            {
-                TempData["SuccessMessage"] = $"?� x�a ng??i d�ng '{user.UserName}' th�nh c�ng.";
+                TempData["SuccessMessage"] = "Đã xóa người dùng thành công.";
             }
             else
             {
-                TempData["ErrorMessage"] = "C� l?i x?y ra khi x�a ng??i d�ng.";
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa người dùng.";
             }
 
             return RedirectToAction(nameof(Index));

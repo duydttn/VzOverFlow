@@ -7,11 +7,15 @@ namespace VzOverFlow.Helpers
         private static readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .UseBootstrap()
+            .UseSoftlineBreakAsHardlineBreak()
+            .DisableHtml()
             .Build();
-            
+
         public static string ToHtml(string markdown)
         {
-            if (string.IsNullOrEmpty(markdown)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(markdown)) return string.Empty;
+
+            // Use Markdig for professional-grade rendering
             return Markdown.ToHtml(markdown, _pipeline);
         }
     }

@@ -30,5 +30,6 @@ namespace VzOverFlow.Models
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public ICollection<Tag> Tags { get; set; } = new List<Tag>();
         public ICollection<Vote> Votes { get; set; } = new List<Vote>();
+        public string? EmbeddingJson { get; set; }
     }
 }

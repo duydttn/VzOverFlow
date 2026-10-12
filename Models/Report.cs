@@ -5,7 +5,7 @@ namespace VzOverFlow.Models
 {
     public class Report
     {
-     public int Id { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public int ReporterId { get; set; }
@@ -14,11 +14,11 @@ namespace VzOverFlow.Models
         public int? QuestionId { get; set; }
         public Question? Question { get; set; }
 
-     public int? AnswerId { get; set; }
+        public int? AnswerId { get; set; }
         public Answer? Answer { get; set; }
 
-[Required]
-   public ReportReason Reason { get; set; }
+        [Required]
+        public ReportReason Reason { get; set; }
 
         [StringLength(1000)]
         public string? Details { get; set; }
@@ -38,43 +38,43 @@ namespace VzOverFlow.Models
 
     public enum ReportReason
     {
-        [Display(Name = "Spam ho?c qu?ng c�o")]
+        [Display(Name = "Spam hoặc quảng cáo")]
         Spam = 1,
 
-        [Display(Name = "N?i dung kh�ng ph� h?p")]
+        [Display(Name = "Nội dung không phù hợp")]
         Inappropriate = 2,
 
-        [Display(Name = "Ng�n t? th� ??ch ho?c l?ng m?")]
-   HateSpeech = 3,
+        [Display(Name = "Ngôn từ thù địch hoặc lăng mạ")]
+        HateSpeech = 3,
 
-  [Display(Name = "Th�ng tin sai l?ch")]
+        [Display(Name = "Thông tin sai lệch")]
         Misinformation = 4,
 
-        [Display(Name = "Vi ph?m b?n quy?n")]
+        [Display(Name = "Vi phạm bản quyền")]
         Copyright = 5,
 
-        [Display(Name = "N?i dung tr�ng l?p")]
+        [Display(Name = "Nội dung trùng lặp")]
         Duplicate = 6,
 
-        [Display(Name = "L� do kh�c")]
+        [Display(Name = "Lý do khác")]
         Other = 99
     }
 
     public enum ReportStatus
     {
-        [Display(Name = "?ang ch? x? l�")]
+        [Display(Name = "Đang chờ xử lý")]
         Pending = 0,
 
-        [Display(Name = "?ang xem x�t")]
+        [Display(Name = "Đang xem xét")]
         UnderReview = 1,
 
-        [Display(Name = "?� gi?i quy?t - H?p l?")]
+        [Display(Name = "Đã giải quyết - Hợp lệ")]
         ResolvedValid = 2,
 
-        [Display(Name = "?� gi?i quy?t - Kh�ng h?p l?")]
+        [Display(Name = "Đã giải quyết - Không hợp lệ")]
         ResolvedInvalid = 3,
 
-        [Display(Name = "?� b? qua")]
+        [Display(Name = "Đã bỏ qua")]
         Dismissed = 4
     }
 }

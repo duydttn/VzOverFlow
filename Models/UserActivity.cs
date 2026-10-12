@@ -7,7 +7,7 @@ namespace VzOverFlow.Models
     {
         public int Id { get; set; }
 
-  [Required]
+        [Required]
         public int UserId { get; set; }
         public User User { get; set; } = default!;
 
@@ -18,9 +18,9 @@ namespace VzOverFlow.Models
         public Question? Question { get; set; }
 
         public int? AnswerId { get; set; }
-    public Answer? Answer { get; set; }
+        public Answer? Answer { get; set; }
 
-     public int XpEarned { get; set; }
+        public int XpEarned { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
@@ -29,11 +29,16 @@ namespace VzOverFlow.Models
     {
         AskQuestion = 1,
         AnswerQuestion = 2,
-   VoteUp = 3,
-     VoteDown = 4,
+        VoteUp = 3,
+        VoteDown = 4,
         AcceptAnswer = 5,
         QuestionUpvoted = 6,
-        AnswerUpvoted = 7,
-        AnswerAccepted = 8
+        QuestionDownvoted = 7,
+        AnswerUpvoted = 8,
+        AnswerDownvoted = 9,
+        AnswerAccepted = 10,
+        Share = 11,
+        DailyLogin = 12,
+        BadgeEarned = 13
     }
 }

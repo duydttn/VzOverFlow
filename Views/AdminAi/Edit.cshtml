@@ -1,0 +1,78 @@
+@model VzOverFlow.Models.ViewModels.AiConfigViewModel
+@{
+    ViewData["Title"] = (Model.Id == 0 ? "Thêm" : "Sửa") + " Cấu hình AI";
+}
+
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <a asp-action="Index" class="text-sm text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-2 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Quay lại danh sách
+        </a>
+        <h1 class="text-3xl font-bold text-slate-900">@(Model.Id == 0 ? "Thêm Key AI mới" : "Chỉnh sửa cấu hình AI")</h1>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <form asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post" class="space-y-6">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-4"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label asp-for="Provider" class="text-sm font-bold text-slate-700">Nhà cung cấp (Provider)</label>
+                    <select asp-for="Provider" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <option value="Gemini">Google Gemini</option>
+                        <option value="OpenAI">OpenAI (ChatGPT)</option>
+                    </select>
+                    <span asp-validation-for="Provider" class="text-red-500 text-xs"></span>
+                </div>
+
+                <div class="space-y-2">
+                    <label asp-for="ModelName" class="text-sm font-bold text-slate-700">Model Name (Tuỳ chọn)</label>
+                    <input asp-for="ModelName" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="e.g. gemini-1.5-pro, gpt-4-turbo" />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label asp-for="ApiKey" class="text-sm font-bold text-slate-700">API Key</label>
+                <div class="relative">
+                    <input asp-for="ApiKey" type="text" id="apiKeyInput" class="w-full rounded-xl border border-slate-300 pl-4 pr-12 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="@(Model.Id == 0 ? "Dán API Key tại đây..." : "Sửa API Key đang có...")" />
+                    <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" id="eyeIcon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                </div>
+                <span asp-validation-for="ApiKey" class="text-red-500 text-xs"></span>
+            </div>
+
+            <div class="flex items-center gap-2 py-2">
+                <input asp-for="IsActive" type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                <label asp-for="IsActive" class="text-sm font-medium text-slate-700">Kích hoạt Key này ngay lập tức</label>
+            </div>
+
+            <div class="space-y-2">
+                <label asp-for="Note" class="text-sm font-bold text-slate-700">Ghi chú</label>
+                <textarea asp-for="Note" rows="3" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Ví dụ: Key dự phòng cho Gemini..."></textarea>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all">
+                    @(Model.Id == 0 ? "Thêm vào hệ thống" : "Lưu thay đổi")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const input = document.getElementById('apiKeyInput');
+        const icon = document.getElementById('eyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />';
+        }
+    }
+</script>

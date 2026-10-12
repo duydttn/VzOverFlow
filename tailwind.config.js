@@ -4,10 +4,11 @@ module.exports = {
         "./Views/**/*.cshtml",
         "./Views/**/*.razor",
         "./Areas/**/*.cshtml",
-        "./Pages/**/*.cshtml", 
+        "./Pages/**/*.cshtml",
         "./wwwroot/**/*.js",
         "./wwwroot/**/*.html"
     ],
+    darkMode: 'class',
     theme: {
         extend: {
             fontFamily: {

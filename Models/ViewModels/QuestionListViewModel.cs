@@ -11,6 +11,17 @@ namespace VzOverFlow.Models.ViewModels
         public string? Sort { get; set; }
     }
 
+    public class AnswerListItemViewModel
+    {
+        public int Id { get; set; }
+        public int QuestionId { get; set; }
+        public string QuestionTitle { get; set; } = string.Empty;
+        public string BodyPreview { get; set; } = string.Empty;
+        public int VoteScore { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsAccepted { get; set; }
+    }
+
     public class QuestionListItemViewModel
     {
         public int Id { get; set; }
@@ -24,5 +35,7 @@ namespace VzOverFlow.Models.ViewModels
         public List<string> Tags { get; set; } = new List<string>();
 
         public int UserReputation { get; set; }
+        public int UserId { get; set; }
+        public string? AvatarUrl { get; set; }
     }
 }

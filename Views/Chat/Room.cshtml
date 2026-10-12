@@ -1,0 +1,363 @@
+@model VzOverFlow.Models.ChatRoom
+@{
+    ViewData["Title"] = Model.Name;
+    var messages = ViewBag.Messages as IEnumerable<dynamic>;
+    var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+
+<div class="flex flex-col h-[calc(100vh-8rem)]">
+    <!-- Header -->
+    <div class="bg-white border border-slate-200 rounded-t-lg p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="font-semibold text-slate-900 flex items-center gap-2">
+                    💬 @Model.Name
+                    <span id="onlineCount" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">0 online</span>
+                </h1>
+                <p class="text-xs text-slate-500">@Model.Description</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="messagesContainer" class="flex-1 bg-white border-x border-slate-200 overflow-y-auto p-4 space-y-3">
+        @if (messages != null)
+        {
+            @foreach (var m in messages)
+            {
+                var isOwn = m.UserId.ToString() == currentUserId;
+                var msgType = m.messageType?.ToString() ?? "text";
+                <div class="flex items-start gap-3 @(isOwn ? "flex-row-reverse" : "")">
+                    <img src="@m.avatarUrl" alt="@m.userName" class="h-8 w-8 rounded-full bg-slate-100" />
+                    <div class="max-w-[70%] @(isOwn ? "text-right" : "")">
+                        <div class="flex items-center gap-2 mb-1 @(isOwn ? "flex-row-reverse" : "")">
+                            <span class="text-xs font-medium text-slate-700">@m.userName</span>
+                            <span class="text-[10px] text-slate-400">@m.createdAt</span>
+                        </div>
+                        @if (msgType == "sticker")
+                        {
+                            <div class="text-4xl">@GetStickerEmoji(m.StickerId?.ToString())</div>
+                        }
+                        else if (msgType == "image")
+                        {
+                            <img src="@m.FileUrl" alt="@m.FileName" class="max-w-[300px] rounded-lg cursor-pointer hover:opacity-90" onclick="window.open('@m.FileUrl', '_blank')" />
+                        }
+                        else if (msgType == "file")
+                        {
+                            <a href="@m.FileUrl" target="_blank" class="inline-flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2 text-sm hover:bg-slate-200">
+                                <svg class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <span class="text-slate-700">@m.FileName</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="inline-block rounded-lg px-3 py-2 text-sm @(isOwn ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-800")">
+                                @m.Content
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Sticker Picker -->
+    <div id="stickerPicker" class="hidden bg-white border-x border-slate-200 p-3 max-h-64 overflow-y-auto">
+        <div class="flex items-center justify-between mb-2 sticky top-0 bg-white pb-2">
+            <span class="text-xs font-medium text-slate-600">Stickers</span>
+            <button onclick="toggleStickerPicker()" class="text-slate-400 hover:text-slate-600 text-xs">Đóng</button>
+        </div>
+        
+        <!-- Faces -->
+        <div class="mb-2">
+            <div class="text-[10px] text-slate-400 mb-1">Mặt cười</div>
+            <div class="flex flex-wrap gap-1">
+                @foreach (var sticker in GetStickersByCategory("faces"))
+                {
+                    <button type="button" onclick="sendSticker('@sticker.Key')" class="text-xl hover:scale-125 transition-transform p-0.5 rounded hover:bg-slate-100">@sticker.Value</button>
+                }
+            </div>
+        </div>
+        
+        <!-- Gestures -->
+        <div class="mb-2">
+            <div class="text-[10px] text-slate-400 mb-1">Cử chỉ</div>
+            <div class="flex flex-wrap gap-1">
+                @foreach (var sticker in GetStickersByCategory("gestures"))
+                {
+                    <button type="button" onclick="sendSticker('@sticker.Key')" class="text-xl hover:scale-125 transition-transform p-0.5 rounded hover:bg-slate-100">@sticker.Value</button>
+                }
+            </div>
+        </div>
+        
+        <!-- Objects -->
+        <div class="mb-2">
+            <div class="text-[10px] text-slate-400 mb-1">Vật thể</div>
+            <div class="flex flex-wrap gap-1">
+                @foreach (var sticker in GetStickersByCategory("objects"))
+                {
+                    <button type="button" onclick="sendSticker('@sticker.Key')" class="text-xl hover:scale-125 transition-transform p-0.5 rounded hover:bg-slate-100">@sticker.Value</button>
+                }
+            </div>
+        </div>
+        
+        <!-- Dev -->
+        <div class="mb-2">
+            <div class="text-[10px] text-slate-400 mb-1">Dev</div>
+            <div class="flex flex-wrap gap-1">
+                @foreach (var sticker in GetStickersByCategory("dev"))
+                {
+                    <button type="button" onclick="sendSticker('@sticker.Key')" class="text-xl hover:scale-125 transition-transform p-0.5 rounded hover:bg-slate-100">@sticker.Value</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="bg-white border border-slate-200 rounded-b-lg p-4">
+        <!-- Pending Attachment Preview -->
+        <div id="attachmentPreview" class="hidden mb-2 p-2 bg-slate-50 border border-slate-200 rounded flex items-center justify-between">
+            <div id="attachmentContent" class="flex items-center gap-2 text-sm text-slate-700">
+                <!-- Content injected via JS -->
+            </div>
+            <button onclick="clearAttachment()" class="text-slate-400 hover:text-red-500">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div class="flex gap-2 items-center">
+            <!-- Sticker button -->
+            <button type="button" onclick="toggleStickerPicker()" class="text-slate-400 hover:text-slate-600 p-2 rounded-md hover:bg-slate-100" title="Stickers">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+            
+            <!-- File Upload -->
+            <label class="text-slate-400 hover:text-slate-600 p-2 rounded-md hover:bg-slate-100 cursor-pointer" title="Đính kèm file">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <input type="file" id="fileInput" class="hidden" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip" />
+            </label>
+
+            <input id="messageInput" type="text" 
+                   class="flex-1 rounded-md border border-slate-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Nhập tin nhắn..." maxlength="2000" />
+            <button id="sendBtn"
+                    class="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
+                <span>Gửi</span>
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Upload progress -->
+        <div id="uploadProgress" class="hidden mt-2">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="uploadFileName">Đang tải...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    Dictionary<string, string> GetStickers()
+    {
+        var all = new Dictionary<string, string>();
+        foreach (var cat in new[] { "faces", "gestures", "objects", "dev" })
+        {
+            foreach (var s in GetStickersByCategory(cat)) all[s.Key] = s.Value;
+        }
+        return all;
+    }
+
+    Dictionary<string, string> GetStickersByCategory(string category)
+    {
+        return category switch {
+            "faces" => new Dictionary<string, string> {
+                {"smile", "😊"}, {"laugh", "😂"}, {"rofl", "🤣"}, {"love", "😍"}, {"cool", "😎"},
+                {"think", "🤔"}, {"nerd", "🤓"}, {"wink", "😉"}, {"kiss", "😘"}, {"blush", "☺️"},
+                {"yum", "😋"}, {"crazy", "🤪"}, {"money", "🤑"}, {"silent", "🤫"}, {"halo", "😇"},
+                {"devil", "😈"}, {"sad", "😢"}, {"cry", "😭"}, {"angry", "😠"}, {"rage", "🤬"},
+                {"shock", "😱"}, {"fear", "😨"}, {"sick", "🤮"}, {"sleep", "😴"}, {"skull", "💀"}
+            },
+            "gestures" => new Dictionary<string, string> {
+                {"thumbsup", "👍"}, {"thumbsdown", "👎"}, {"clap", "👏"}, {"pray", "🙏"}, {"flex", "💪"},
+                {"wave", "👋"}, {"ok", "👌"}, {"peace", "✌️"}, {"fist", "✊"}, {"punch", "👊"},
+                {"salute", "🫡"}, {"shrug", "🤷"}, {"facepalm", "🤦"}, {"point", "👉"}, {"eyes", "👀"}
+            },
+            "objects" => new Dictionary<string, string> {
+                {"heart", "❤️"}, {"fire", "🔥"}, {"star", "⭐"}, {"sparkle", "✨"}, {"rainbow", "🌈"},
+                {"sun", "☀️"}, {"moon", "🌙"}, {"cloud", "☁️"}, {"bolt", "⚡"}, {"droplet", "💧"},
+                {"rocket", "🚀"}, {"party", "🎉"}, {"balloon", "🎈"}, {"gift", "🎁"}, {"trophy", "🏆"},
+                {"medal", "🥇"}, {"crown", "👑"}, {"gem", "💎"}, {"money", "💰"}, {"bulb", "💡"},
+                {"coffee", "☕"}, {"beer", "🍺"}, {"pizza", "🍕"}, {"cake", "🎂"}, {"cookie", "🍪"}
+            },
+            "dev" => new Dictionary<string, string> {
+                {"code", "💻"}, {"bug", "🐛"}, {"check", "✅"}, {"cross", "❌"}, {"warning", "⚠️"},
+                {"wrench", "🔧"}, {"gear", "⚙️"}, {"link", "🔗"}, {"lock", "🔒"}, {"key", "🔑"},
+                {"zap", "⚡"}, {"target", "🎯"}, {"chart", "📈"}, {"folder", "📁"}, {"file", "📄"},
+                {"book", "📚"}, {"pencil", "✏️"}, {"search", "🔍"}, {"bell", "🔔"}, {"clock", "🕐"}
+            },
+            _ => new Dictionary<string, string>()
+        };
+    }
+
+    string GetStickerEmoji(string? stickerId)
+    {
+        var stickers = GetStickers();
+        return stickers.TryGetValue(stickerId ?? "", out var emoji) ? emoji : "❓";
+    }
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const roomId = @Model.Id;
+        const currentUserId = '@currentUserId';
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const onlineCount = document.getElementById('onlineCount');
+        const stickerPicker = document.getElementById('stickerPicker');
+        const fileInput = document.getElementById('fileInput');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const attachmentPreview = document.getElementById('attachmentPreview');
+        const attachmentContent = document.getElementById('attachmentContent');
+        let pendingAttachment = null; // { type: 'sticker'|'file', content: any }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            // Priority: Pending Attachment -> Text
+            if (pendingAttachment) {
+                if (pendingAttachment.type === 'sticker') {
+                    connection.invoke('SendSticker', roomId, pendingAttachment.content).catch(function(err) {
+                        console.error(err.toString());
+                    });
+                } else if (pendingAttachment.type === 'file') {
+                    await uploadAndSendFile(pendingAttachment.content);
+                }
+                clearAttachment();
+                return;
+            }
+
+            const content = messageInput.value.trim();
+            if (!content) return;
+            
+            connection.invoke('SendMessage', roomId, content).catch(function(err) {
+                console.error(err.toString());
+            });
+            
+            messageInput.value = '';
+            messageInput.focus();
+        }
+
+        function toggleStickerPicker() {
+            stickerPicker.classList.toggle('hidden');
+        }
+
+        function sendSticker(stickerId) {
+            // Instead of sending immediately, set as pending attachment
+            pendingAttachment = { type: 'sticker', content: stickerId };
+            showAttachmentPreview(`<div class="text-2xl">${stickers[stickerId] || '❓'}</div> <span class="text-xs text-slate-500">Sticker</span>`);
+            stickerPicker.classList.add('hidden');
+            messageInput.focus();
+        }
+
+        function showAttachmentPreview(html) {
+            attachmentContent.innerHTML = html;
+            attachmentPreview.classList.remove('hidden');
+        }
+
+        function clearAttachment() {
+            pendingAttachment = null;
+            attachmentPreview.classList.add('hidden');
+            attachmentContent.innerHTML = '';
+            fileInput.value = '';
+        }
+
+        // File upload handling
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File quá lớn. Giới hạn 5MB.');
+                this.value = '';
+                return;
+            }
+            
+            pendingAttachment = { type: 'file', content: file };
+            
+            // Preview
+            let previewHtml = '';
+            if (file.type.startsWith('image/')) {
+                const url = URL.createObjectURL(file);
+                previewHtml = `<img src="${url}" class="h-10 w-10 object-cover rounded" /> <span>${escapeHtml(file.name)}</span>`;
+            } else {
+                previewHtml = `<svg class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> <span>${escapeHtml(file.name)}</span>`;
+            }
+            showAttachmentPreview(previewHtml);
+            messageInput.focus();
+        });
+
+        async function uploadAndSendFile(file) {
+            uploadProgress.classList.remove('hidden');
+            uploadFileName.textContent = 'Đang tải: ' + file.name;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            
+            try {
+                const response = await fetch(`/chat/api/upload/${roomId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Logic handled completely by backend broadcasting if configured, 
+                    // but here we might need to manually append or let SignalR do it.
+                    // The original code appended message manually then broadcasted notification.
+                    // Let's keep consistent.
+                    appendMessage(data.message);
+                    scrollToBottom();
+                    connection.invoke('SendFileNotification', roomId, data.message).catch(() => {});
+                } else {
+                    alert(data.error || 'Lỗi tải file');
+                }
+            } catch (err) {
+                alert('Lỗi khi tải file');
+            } finally {
+                uploadProgress.classList.add('hidden');
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        scrollToBottom();
+        window.addEventListener('beforeunload', function() {
+            connection.invoke('LeaveRoom', roomId);
+        });
+    </script>
+    
+    @Html.AntiForgeryToken()
+}

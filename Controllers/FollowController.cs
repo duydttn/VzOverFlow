@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using VzOverFlow.Data;
 using VzOverFlow.Models;
+using VzOverFlow.Services;
 
 namespace VzOverFlow.Controllers
 {
@@ -11,10 +12,12 @@ namespace VzOverFlow.Controllers
     public class FollowController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public FollowController(AppDbContext context)
+        public FollowController(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpPost]
@@ -37,12 +40,7 @@ namespace VzOverFlow.Controllers
                 _context.UserFollows.Add(new UserFollow { FollowerId = currentUserId, FollowedUserId = userId });
                 isFollowing = true;
 
-                _context.Notifications.Add(new Notification
-                {
-                    UserId = userId,
-                    Message = $"{User.Identity.Name} đã bắt đầu theo dõi bạn.",
-                    Link = $"/Users/Profile/{currentUserId}"
-                });
+                await _notificationService.NotifyFollowAsync(userId, User.Identity.Name, currentUserId);
             }
 
             await _context.SaveChangesAsync();

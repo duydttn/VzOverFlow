@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -20,19 +21,40 @@ namespace VzOverFlow.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly ITwoFactorService _twoFactorService;
         private readonly IAuthenticatorService _authenticatorService;
+        private readonly ILogger<UsersController> _logger;
 
         public UsersController(
             IUserService userService,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             ITwoFactorService twoFactorService,
-            IAuthenticatorService authenticatorService)
+            IAuthenticatorService authenticatorService,
+            ILogger<UsersController> logger)
         {
             _userService = userService;
             _userManager = userManager;
             _signInManager = signInManager;
             _twoFactorService = twoFactorService;
             _authenticatorService = authenticatorService;
+            _logger = logger;
+        }
+
+        [HttpGet("banned")]
+        public IActionResult Banned()
+        {
+            return View();
+        }
+
+        [HttpGet("/me")]
+        [Authorize]
+        public IActionResult Me()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                 return Challenge();
+            }
+            return RedirectToAction("Profile", new { id = int.Parse(userId) });
         }
 
         [HttpGet("")]
@@ -72,6 +94,8 @@ namespace VzOverFlow.Controllers
                 UserId = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
+                Bio = user.Bio,
+                AvatarUrl = user.AvatarUrl,
                 StatusMessage = TempData["AccountStatusMessage"] as string
             };
 
@@ -120,6 +144,22 @@ namespace VzOverFlow.Controllers
 
             user.UserName = model.UserName.Trim();
             user.Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim();
+            user.Bio = model.Bio;
+
+            if (model.AvatarFile != null && model.AvatarFile.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatars");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + model.AvatarFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.AvatarFile.CopyToAsync(stream);
+                }
+                user.AvatarUrl = "/images/avatars/" + uniqueFileName;
+            }
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -227,95 +267,118 @@ namespace VzOverFlow.Controllers
             TempData["PendingUserEmail"] = user.Email;
             TempData["InfoMessage"] = "Một mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và nhập mã để hoàn tất đăng ký.";
           
-            return RedirectToAction(nameof(VerifyEmail));
+            return RedirectToAction(nameof(VerifyEmail), new { userId = user.Id });
         }
 
         [HttpGet("verify-email")]
-  [AllowAnonymous]
-     public IActionResult VerifyEmail()
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmail(int? userId)
         {
-     if (TempData["PendingUserId"] == null)
-{
-           return RedirectToAction(nameof(Register));
-        }
+            if (userId == null)
+            {
+                if (TempData["PendingUserId"] != null && int.TryParse(TempData["PendingUserId"].ToString(), out int tdId))
+                {
+                    userId = tdId;
+                }
+            }
 
-            TempData.Keep("PendingUserId");
-            TempData.Keep("PendingUserEmail");
-            ViewBag.Email = TempData["PendingUserEmail"];
+            if (userId == null)
+            {
+                return RedirectToAction(nameof(Register));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Register));
+            }
+
+            ViewBag.UserId = userId.Value;
+            ViewBag.Email = user.Email;
             ViewBag.Info = TempData["InfoMessage"];
-   ViewBag.Error = TempData["ErrorMessage"];
-    
+            ViewBag.Error = TempData["ErrorMessage"];
+
             return View();
         }
 
-[HttpPost("verify-email")]
-  [AllowAnonymous]
+        [HttpPost("verify-email")]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyEmail(string otpCode)
+        public async Task<IActionResult> VerifyEmail(string otpCode, int? userId)
         {
-      var userIdValue = TempData["PendingUserId"]?.ToString();
-if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
-        {
-         return RedirectToAction(nameof(Register));
-     }
-
-       var user = await _userManager.FindByIdAsync(userId.ToString());
-      if (user == null)
- {
-      return RedirectToAction(nameof(Register));
+            if (userId == null)
+            {
+                var userIdValue = TempData.Peek("PendingUserId")?.ToString();
+                if (!string.IsNullOrEmpty(userIdValue) && int.TryParse(userIdValue, out int tdId))
+                {
+                    userId = tdId;
+                }
             }
 
-        // Validate OTP
-            if (!await _twoFactorService.ValidateCodeAsync(userId, OtpPurpose.EmailVerification, otpCode))
+            if (userId == null)
             {
-  TempData["ErrorMessage"] = "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
-    TempData["PendingUserId"] = userId;
-         TempData["PendingUserEmail"] = user.Email;
-   return RedirectToAction(nameof(VerifyEmail));
-   }
+                return RedirectToAction(nameof(Register));
+            }
 
-            // Xác thực email thành công
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Register));
+            }
+
+            if (!await _twoFactorService.ValidateCodeAsync(userId.Value, OtpPurpose.EmailVerification, otpCode))
+            {
+                TempData["ErrorMessage"] = "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
+                TempData["PendingUserId"] = userId;
+                TempData["PendingUserEmail"] = user.Email;
+                return RedirectToAction(nameof(VerifyEmail), new { userId = userId });
+            }
+
             user.EmailConfirmed = true;
-     await _userManager.UpdateAsync(user);
-
-     // Đăng nhập người dùng
-          await _signInManager.SignInAsync(user, isPersistent: false);
-    
-  TempData.Remove("PendingUserId");
-   TempData.Remove("PendingUserEmail");
- TempData["WelcomeMessage"] = $"Chào mừng {user.UserName}! Đăng ký thành công. Email của bạn đã được xác thực.";
-       
-     return RedirectToAction("Index", "Home");
-      }
+            await _userManager.UpdateAsync(user);
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            
+            TempData.Remove("PendingUserId");
+            TempData.Remove("PendingUserEmail");
+            TempData["SuccessMessage"] = $"Chào mừng {user.UserName}! Đăng ký thành công. Email của bạn đã được xác thực.";
+            TempData["Celebration"] = true;
+            
+            return RedirectToAction("Index", "Home");
+        }
 
         [HttpPost("resend-email-verification")]
-  [AllowAnonymous]
-  [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResendEmailVerification()
-   {
-       var userIdValue = TempData["PendingUserId"]?.ToString();
-     if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
-       {
-  return RedirectToAction(nameof(Register));
-     }
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendEmailVerification(int? userId)
+        {
+            if (userId == null)
+            {
+               var userIdValue = TempData["PendingUserId"]?.ToString();
+               if (!string.IsNullOrEmpty(userIdValue) && int.TryParse(userIdValue, out int tdId))
+               {
+                   userId = tdId;
+               }
+            }
 
-  var user = await _userManager.FindByIdAsync(userId.ToString());
-       if (user == null)
-{
-     return RedirectToAction(nameof(Register));
-      }
+            if (userId == null)
+            {
+                return RedirectToAction(nameof(Register));
+            }
 
-   // Hủy các mã cũ
- await _twoFactorService.InvalidateCodesAsync(userId, OtpPurpose.EmailVerification);
-
-    // Gửi mã mới
- await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.EmailVerification);
-
-   TempData["PendingUserId"] = userId;
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Register));
+            }
+            await _twoFactorService.InvalidateCodesAsync(userId.Value, OtpPurpose.EmailVerification);
+            await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.EmailVerification);
+            
+            // Should reuse the passed userId
+            TempData["PendingUserId"] = userId;
             TempData["PendingUserEmail"] = user.Email;
-    TempData["InfoMessage"] = "Mã OTP mới đã được gửi đến email của bạn.";
+            TempData["InfoMessage"] = "Mã OTP mới đã được gửi đến email của bạn.";
 
- return RedirectToAction(nameof(VerifyEmail));
+            return RedirectToAction(nameof(VerifyEmail), new { userId = userId });
         }
 
         [HttpGet("login")]
@@ -328,52 +391,56 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
         [HttpPost("login")]
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
- public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-      if (!ModelState.IsValid)
-     {
-          return View(model);
-   }
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
 
-          var identifier = model.UserNameOrEmail.Trim();
-       var user = await _userManager.Users
-    .FirstOrDefaultAsync(u => u.UserName == identifier || u.Email == identifier);
-    if (user == null)
+            var identifier = model.UserNameOrEmail.Trim();
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.UserName == identifier || u.Email == identifier);
+            if (user == null)
             {
                 ViewBag.Error = "Thông tin đăng nhập không chính xác.";
-    return View(model);
-         }
+                return View(model);
+            }
 
-        var passwordValid = await _userManager.CheckPasswordAsync(user, model.Password);
-        if (!passwordValid)
-     {
-        ViewBag.Error = "Thông tin đăng nhập không chính xác.";
-        return View(model);
-      }
+            if (user.IsBanned)
+            {
+                ViewBag.Error = "Tài khoản của bạn đã bị khóa bởi quản trị viên. Vui lòng liên hệ để biết thêm chi tiết.";
+                return View(model);
+            }
 
-   // Kiểm tra user có email không
- if (string.IsNullOrEmpty(user.Email))
-      {
-        ViewBag.Error = "Tài khoản chưa có email. Vui lòng liên hệ quản trị viên.";
-          return View(model);
-          }
+            var passwordValid = await _userManager.CheckPasswordAsync(user, model.Password);
+            if (!passwordValid)
+            {
+                ViewBag.Error = "Thông tin đăng nhập không chính xác.";
+                return View(model);
+            }
 
-         // Nếu đã bật 2FA với Authenticator App
-       if (user.TwoFactorEnabled && !string.IsNullOrEmpty(user.AuthenticatorKey))
-  {
-       TempData["TwoFactorUserId"] = user.Id;
-      TempData["InfoMessage"] = "Vui lòng nhập mã từ ứng dụng xác thực của bạn.";
-     return RedirectToAction(nameof(VerifyAuthenticatorCode));
-       }
+            if (string.IsNullOrEmpty(user.Email))
+            {
+                ViewBag.Error = "Tài khoản chưa có email. Vui lòng liên hệ quản trị viên.";
+                return View(model);
+            }
 
-          // Với tất cả trường hợp khác, gửi OTP qua email
-          await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.Login);
+            if (user.TwoFactorEnabled && !string.IsNullOrEmpty(user.AuthenticatorKey))
+            {
+                TempData["TwoFactorUserId"] = user.Id;
+                TempData["InfoMessage"] = "Vui lòng nhập mã từ ứng dụng xác thực của bạn.";
+                return RedirectToAction(nameof(VerifyAuthenticatorCode));
+            }
+
+            await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.Login);
             TempData["LoginUserId"] = user.Id;
             TempData["LoginUserEmail"] = user.Email;
             TempData["InfoMessage"] = "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và nhập mã để đăng nhập.";
-            
-    return RedirectToAction(nameof(VerifyLoginOtp));
+
+            return RedirectToAction(nameof(VerifyLoginOtp));
         }
+
 
         [HttpGet("verify-authenticator")]
         [AllowAnonymous]
@@ -393,117 +460,162 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
         [HttpPost("verify-authenticator")]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
- public async Task<IActionResult> VerifyAuthenticatorCode(string code)
+        public async Task<IActionResult> VerifyAuthenticatorCode(string code)
         {
-     var userIdValue = TempData["TwoFactorUserId"]?.ToString();
-   if (string.IsNullOrEmpty(userIdValue))
-      {
-      return RedirectToAction(nameof(Login));
+            var userIdValue = TempData.Peek("TwoFactorUserId")?.ToString();
+            if (string.IsNullOrEmpty(userIdValue))
+            {
+                return RedirectToAction(nameof(Login));
             }
 
-      var user = await _userManager.FindByIdAsync(userIdValue);
-   if (user == null || string.IsNullOrEmpty(user.AuthenticatorKey))
-   {
+            var user = await _userManager.FindByIdAsync(userIdValue);
+            if (user == null || string.IsNullOrEmpty(user.AuthenticatorKey))
+            {
                 return RedirectToAction(nameof(Login));
-     }
+            }
 
-     if (!_authenticatorService.ValidateTwoFactorCode(user.AuthenticatorKey, code))
-      {
-       TempData["TwoFactorError"] = "Mã xác thực không hợp lệ. Vui lòng thử lại.";
-            TempData.Keep("TwoFactorUserId");
- return RedirectToAction(nameof(VerifyAuthenticatorCode));
-         }
+            try
+            {
+                if (!_authenticatorService.ValidateTwoFactorCode(user.AuthenticatorKey, code))
+                {
+                    ViewBag.Error = "Mã xác thực không hợp lệ. Vui lòng thử lại.";
+                    return View();
+                }
 
- await _signInManager.SignInAsync(user, isPersistent: false);
-TempData.Remove("TwoFactorUserId");
-  return RedirectToAction(nameof(Profile), new { id = user.Id });
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                TempData.Remove("TwoFactorUserId");
+                return RedirectToAction(nameof(Profile), new { id = user.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in VerifyAuthenticatorCode");
+                ViewBag.Error = $"SYSTEM ERROR: {ex.Message}";
+                return View();
+            }
+        }
+
+        [HttpPost("login-email-backup")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LoginWithEmailBackup()
+        {
+            var userIdValue = TempData.Peek("TwoFactorUserId")?.ToString();
+            if (string.IsNullOrEmpty(userIdValue))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByIdAsync(userIdValue);
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            try 
+            {
+                // Gửi OTP qua email
+                await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.Login);
+                
+                TempData["LoginUserId"] = user.Id;
+                TempData["LoginUserEmail"] = user.Email;
+                TempData["InfoMessage"] = "Mã OTP dự phòng đã được gửi đến email của bạn. Vui lòng kiểm tra và nhập mã.";
+                
+                // Sau khi chuyển sang email OTP, có thể xóa TwoFactorUserId để tránh conflict
+                TempData.Remove("TwoFactorUserId");
+                
+                return RedirectToAction(nameof(VerifyLoginOtp));
+            }
+            catch (Exception ex)
+            {
+                TempData["TwoFactorError"] = "Có lỗi xảy ra khi gửi mã OTP: " + ex.Message;
+                return RedirectToAction(nameof(VerifyAuthenticatorCode));
+            }
         }
 
         [HttpGet("verify-login-otp")]
-   [AllowAnonymous]
-   public IActionResult VerifyLoginOtp()
- {
-        if (TempData["LoginUserId"] == null)
-   {
-       return RedirectToAction(nameof(Login));
-   }
-
-    TempData.Keep("LoginUserId");
-  TempData.Keep("LoginUserEmail");
-       ViewBag.Email = TempData["LoginUserEmail"];
-     ViewBag.Info = TempData["InfoMessage"];
-   ViewBag.Error = TempData["ErrorMessage"];
-            
-return View();
-  }
-
-        [HttpPost("verify-login-otp")]
-    [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-     public async Task<IActionResult> VerifyLoginOtp(string otpCode)
+        [AllowAnonymous]
+        public IActionResult VerifyLoginOtp()
         {
-      var userIdValue = TempData["LoginUserId"]?.ToString();
-if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
-   {
-   return RedirectToAction(nameof(Login));
+            if (TempData["LoginUserId"] == null)
+            {
+                return RedirectToAction(nameof(Login));
             }
 
-   var user = await _userManager.FindByIdAsync(userId.ToString());
-         if (user == null)
-    {
-         return RedirectToAction(nameof(Login));
-   }
+            TempData.Keep("LoginUserId");
+            TempData.Keep("LoginUserEmail");
+            ViewBag.Email = TempData["LoginUserEmail"];
+            ViewBag.Info = TempData["InfoMessage"];
+            ViewBag.Error = TempData["ErrorMessage"];
 
-      // Validate OTP
-     if (!await _twoFactorService.ValidateCodeAsync(userId, OtpPurpose.Login, otpCode))
-    {
-        TempData["ErrorMessage"] = "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
-   TempData["LoginUserId"] = userId;
-       TempData["LoginUserEmail"] = user.Email;
-                return RedirectToAction(nameof(VerifyLoginOtp));
- }
+            return View();
+        }
 
- // Đăng nhập thành công
-     await _signInManager.SignInAsync(user, isPersistent: false);
-    
+        [HttpPost("verify-login-otp")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyLoginOtp(string otpCode)
+        {
+            var userIdValue = TempData.Peek("LoginUserId")?.ToString();
+            if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Xác thực OTP
+            if (!await _twoFactorService.ValidateCodeAsync(userId, OtpPurpose.Login, otpCode))
+            {
+                ViewBag.Error = "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
+                ViewBag.Email = user.Email;
+                return View();
+            }
+
+            // Đăng nhập thành công
+            await _signInManager.SignInAsync(user, isPersistent: false);
+
             TempData.Remove("LoginUserId");
- TempData.Remove("LoginUserEmail");
-     TempData["SuccessMessage"] = "Đăng nhập thành công!";
-         
+            TempData.Remove("LoginUserEmail");
+            TempData["SuccessMessage"] = "Đăng nhập thành công!";
+
             return RedirectToAction(nameof(Profile), new { id = user.Id });
-  }
+        }
 
         [HttpPost("resend-login-otp")]
-    [AllowAnonymous]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
- public async Task<IActionResult> ResendLoginOtp()
+        public async Task<IActionResult> ResendLoginOtp()
         {
-       var userIdValue = TempData["LoginUserId"]?.ToString();
-     if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
+            var userIdValue = TempData["LoginUserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int userId))
             {
-   return RedirectToAction(nameof(Login));
-      }
+                return RedirectToAction(nameof(Login));
+            }
 
-    var user = await _userManager.FindByIdAsync(userId.ToString());
-      if (user == null)
-     {
-   return RedirectToAction(nameof(Login));
-      }
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
 
-       // Hủy các mã cũ
-   await _twoFactorService.InvalidateCodesAsync(userId, OtpPurpose.Login);
+            // Hủy các mã cũ
+            await _twoFactorService.InvalidateCodesAsync(userId, OtpPurpose.Login);
 
-    // Gửi mã mới
-   await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.Login);
+            // Gửi mã mới
+            await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.Login);
 
-     TempData["LoginUserId"] = userId;
-       TempData["LoginUserEmail"] = user.Email;
+            TempData["LoginUserId"] = userId;
+            TempData["LoginUserEmail"] = user.Email;
             TempData["InfoMessage"] = "Mã OTP mới đã được gửi đến email của bạn.";
 
             return RedirectToAction(nameof(VerifyLoginOtp));
-     }
+        }
 
-[HttpPost("logout")]
+        [HttpPost("logout")]
         [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
@@ -511,6 +623,7 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             await _signInManager.SignOutAsync();
             return RedirectToAction(nameof(Login));
         }
+
 
         [HttpPost("twofactor/request")]
         [Authorize]
@@ -590,6 +703,25 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             return RedirectToAction(nameof(SecuritySettings));
         }
 
+        [HttpGet("settings/password")]
+        [Authorize]
+        public async Task<IActionResult> PasswordSettings()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var model = new ChangePasswordViewModel
+            {
+                StatusMessage = TempData["StatusMessage"] as string,
+                TwoFactorEnabled = user.TwoFactorEnabled
+            };
+
+            return View("SettingsPassword", model);
+        }
+
         [HttpPost("password/request-otp")]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -598,13 +730,20 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "Không tìm thấy người dùng." });
             }
 
-            await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.ChangePassword);
-            TempData["StatusMessage"] = "Mã OTP đổi mật khẩu đã được gửi.";
-            return RedirectToAction(nameof(SecuritySettings));
+            try
+            {
+                await _twoFactorService.GenerateAndSendAsync(user, OtpPurpose.ChangePassword);
+                return Json(new { success = true, message = "Mã OTP đổi mật khẩu đã được gửi đến email của bạn." });
+            }
+            catch (Exception)
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi gửi OTP. Vui lòng thử lại." });
+            }
         }
+
 
         [HttpPost("password/change")]
         [Authorize]
@@ -614,7 +753,7 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             if (!ModelState.IsValid)
             {
                 TempData["StatusMessage"] = "Thông tin đổi mật khẩu chưa hợp lệ.";
-                return RedirectToAction(nameof(SecuritySettings));
+                return RedirectToAction(nameof(PasswordSettings));
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -626,7 +765,7 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             if (!await _userManager.CheckPasswordAsync(user, model.OldPassword))
             {
                 TempData["StatusMessage"] = "Mật khẩu cũ không đúng.";
-                return RedirectToAction(nameof(SecuritySettings));
+                return RedirectToAction(nameof(PasswordSettings));
             }
 
             if (user.TwoFactorEnabled)
@@ -635,7 +774,7 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
                 if (!valid)
                 {
                     TempData["StatusMessage"] = "Mã OTP đổi mật khẩu không hợp lệ.";
-                    return RedirectToAction(nameof(SecuritySettings));
+                    return RedirectToAction(nameof(PasswordSettings));
                 }
             }
 
@@ -643,7 +782,7 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             TempData["StatusMessage"] = result.Succeeded
                 ? "Đổi mật khẩu thành công."
                 : string.Join("; ", result.Errors.Select(e => e.Description));
-            return RedirectToAction(nameof(SecuritySettings));
+            return RedirectToAction(nameof(PasswordSettings));
         }
 
         private void AddErrors(IdentityResult result)
@@ -654,5 +793,128 @@ if (string.IsNullOrEmpty(userIdValue) || !int.TryParse(userIdValue, out int user
             }
         }
 
+        [HttpPost("external-login")]
+        [ValidateAntiForgeryToken]
+        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        {
+            var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Users", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return Challenge(properties, provider);
+        }
+
+        [HttpGet("external-login-callback")]
+        public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+        {
+            returnUrl ??= Url.Content("~/");
+
+            if (remoteError != null)
+            {
+                TempData["Error"] = $"Lỗi từ provider: {remoteError}";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                TempData["Error"] = "Không thể lấy thông tin đăng nhập từ provider.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Try to sign in with existing external login
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(
+                info.LoginProvider, 
+                info.ProviderKey, 
+                isPersistent: false, 
+                bypassTwoFactor: true);
+
+            if (signInResult.Succeeded)
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            // If user doesn't exist, create one
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = info.Principal.FindFirstValue(ClaimTypes.Name) ?? info.Principal.FindFirstValue(ClaimTypes.GivenName);
+            
+            if (string.IsNullOrEmpty(email))
+            {
+                // Try to get email from GitHub avatar claim
+                email = $"{info.ProviderKey}@{info.LoginProvider.ToLower()}.local";
+            }
+
+            // Check if user with this email exists
+            var existingUser = await _userManager.FindByEmailAsync(email);
+            if (existingUser != null)
+            {
+                // Link the external login to existing user
+                var addLoginResult = await _userManager.AddLoginAsync(existingUser, info);
+                if (addLoginResult.Succeeded)
+                {
+                    await _signInManager.SignInAsync(existingUser, isPersistent: false);
+                    TempData["SuccessMessage"] = $"Đã liên kết tài khoản {info.LoginProvider} với tài khoản của bạn.";
+                    return LocalRedirect(returnUrl);
+                }
+            }
+
+            // Create new user
+            // Create new user
+            // Sanitize username: Remove accents, keep only alphanumeric
+            var rawName = name ?? "user";
+            var normalized = rawName.Normalize(System.Text.NormalizationForm.FormD);
+            var chars = normalized.Where(c => char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray();
+            var asciiName = new string(chars).Normalize(System.Text.NormalizationForm.FormC);
+            var safeName = System.Text.RegularExpressions.Regex.Replace(asciiName, "[^a-zA-Z0-9]", "");
+            
+            if (string.IsNullOrEmpty(safeName)) safeName = $"user{Guid.NewGuid().ToString("N")[..4]}";
+
+            var userName = safeName;
+            
+            // Ensure unique username
+            var baseUserName = userName;
+            var counter = 1;
+            while (await _userManager.FindByNameAsync(userName) != null)
+            {
+                userName = $"{baseUserName}{counter++}";
+            }
+
+            var newUser = new User
+            {
+                UserName = userName,
+                Email = email,
+                EmailConfirmed = true, // Trust the provider
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Get avatar from provider
+            var avatarClaim = info.Principal.FindFirstValue("urn:github:avatar") 
+                ?? info.Principal.FindFirstValue("picture");
+            if (!string.IsNullOrEmpty(avatarClaim))
+            {
+                newUser.AvatarUrl = avatarClaim;
+            }
+
+            var createResult = await _userManager.CreateAsync(newUser);
+            if (createResult.Succeeded)
+            {
+                await _userManager.AddLoginAsync(newUser, info);
+                await _signInManager.SignInAsync(newUser, isPersistent: false);
+                
+                TempData["SuccessMessage"] = $"Chào mừng {newUser.UserName}! Đăng ký thành công qua {info.LoginProvider}.";
+                TempData["Celebration"] = true;
+                return LocalRedirect(returnUrl);
+            }
+
+            var errorMsg = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            TempData["Error"] = $"Không thể tạo tài khoản: {errorMsg}";
+            return RedirectToAction(nameof(Login));
+        }
+
+        [HttpGet("api/external-providers")]
+        public IActionResult GetExternalProviders()
+        {
+            var schemes = _signInManager.GetExternalAuthenticationSchemesAsync().Result;
+            var providers = schemes.Select(s => new { s.Name, s.DisplayName }).ToList();
+            return Json(providers);
+        }
     }
 }

@@ -9,4 +9,3 @@ namespace VzOverFlow.Models
         public string AppPassword { get; set; } = default!;
     }
 }
-

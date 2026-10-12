@@ -59,6 +59,16 @@
                         Chưa có câu trả lời nào. Hãy là người đầu tiên đưa ra lời giải thích chi tiết và nhận reputation từ cộng đồng!
                     </p>
                 }
+                <div class="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2">
+                    <span class="text-[11px] text-slate-400">Đánh giá tóm tắt này:</span>
+                    <button id="feedbackHelpful" class="rounded px-2 py-0.5 text-[11px] bg-slate-800 hover:bg-green-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1">
+                        <span>👍</span> Hữu ích
+                    </button>
+                    <button id="feedbackNotRelevant" class="rounded px-2 py-0.5 text-[11px] bg-slate-800 hover:bg-red-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1">
+                        <span>👎</span> Không phù hợp
+                    </button>
+                    <span id="feedbackMessage" class="hidden text-[11px] font-medium ml-1"></span>
+                </div>
             </div>
         </div>
 

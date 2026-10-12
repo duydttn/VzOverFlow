@@ -1,95 +1,223 @@
-@model IEnumerable<VzOverFlow.Models.User>
+@model VzOverFlow.Models.ViewModels.AdminUsersViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<VzOverFlow.Models.User> UserManager
 @{
-    ViewData["Title"] = "Quản lý người dùng";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Quản trị hệ thống";
+    var stats = Model.Stats;
 }
 
-<div id="mainbar-full" class="w100">
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+        <h1 class="text-3xl font-bold text-slate-900">🛡️ Quản trị hệ thống</h1>
+        <div class="text-sm text-slate-500">
+            Hôm nay là @DateTime.Now.ToString("dd MMMM, yyyy")
+        </div>
+    </div>
+    <p class="text-slate-600">Tổng quan tình hình và quản lý người dùng VzOverFlow.</p>
+</div>
 
-    <div class="d-flex ai-center jc-space-between mb24 border-bottom pb12">
-        <h1 class="fs-headline1 mb0">Quản lý người dùng</h1>
-        <span class="fs-caption fc-light d-none sm:d-block">
-            Chỉ Admin mới truy cập được trang này
-        </span>
+<!-- Stats Dashboard -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-blue-100 p-3 rounded-lg text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Người dùng</p>
+                <h3 class="text-2xl font-bold text-slate-900">@stats.TotalUsers</h3>
+            </div>
+        </div>
+        <div class="mt-4 text-xs text-red-500 font-medium">@stats.BannedUsers bị khóa</div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-orange-100 p-3 rounded-lg text-orange-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Câu hỏi</p>
+                <h3 class="text-2xl font-bold text-slate-900">@stats.TotalQuestions</h3>
+            </div>
+        </div>
+        <div class="mt-4 text-xs text-slate-400">@stats.TotalAnswers câu trả lời</div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-red-100 p-3 rounded-lg text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Báo cáo vi phạm</p>
+                <h3 class="text-2xl font-bold text-slate-900">@stats.TotalReports</h3>
+            </div>
+        </div>
+        <div class="mt-4 text-xs text-red-600 font-bold">@stats.PendingReports đang chờ xử lý</div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-green-100 p-3 rounded-lg text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Hệ thống</p>
+                <h3 class="text-2xl font-bold text-slate-900">Ổn định</h3>
+            </div>
+        </div>
+        <div class="mt-4 text-xs text-green-600">Database: Trực tuyến</div>
+    </div>
+</div>
+
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-10">
+    <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+        <h2 class="text-lg font-bold text-slate-800">Quản lý người dùng</h2>
+        <form method="get" class="flex items-center gap-2 max-w-sm w-full">
+            <div class="relative w-full">
+                <input type="text" name="search" value="@Model.SearchQuery" 
+                       placeholder="Tìm theo tên hoặc email..."
+                       class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors">Tìm</button>
+        </form>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="s-notice s-notice__success mb24" role="status">
-            <div class="d-flex ai-center">
-                <svg aria-hidden="true" class="svg-icon iconCheckmark" width="18" height="18" viewBox="0 0 18 18"><path d="M15.41 3.59 7 12 2.59 7.59 1.17 9l5.83 5.83 9.83-9.83-1.42-1.41Z"></path></svg>
-                <div class="ml8">@TempData["SuccessMessage"]</div>
-            </div>
+        <div class="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            @TempData["SuccessMessage"]
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="s-notice s-notice__danger mb24" role="status">
-            <div class="d-flex ai-center">
-                <svg aria-hidden="true" class="svg-icon iconClear" width="18" height="18" viewBox="0 0 18 18"><path d="M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41Z"></path></svg>
-                <div class="ml8">@TempData["ErrorMessage"]</div>
-            </div>
+        <div class="mx-6 mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            @TempData["ErrorMessage"]
         </div>
     }
 
-    <div class="s-table-container bg-white p0 bar-md bs-sm border bc-black-100">
-        <table class="s-table s-table__stripes w100">
-            <thead>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 border-b border-slate-200">
                 <tr>
-                    <th scope="col" class="s-table--cell">Id</th>
-                    <th scope="col" class="s-table--cell">UserName</th>
-                    <th scope="col" class="s-table--cell">Email</th>
-                    <th scope="col" class="s-table--cell">Reputation</th>
-                    <th scope="col" class="s-table--cell">Ngày tạo</th>
-                    <th scope="col" class="s-table--cell ta-right">Hành động</th>
+                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Người dùng</th>
+                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vai trò</th>
+                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Trạng thái</th>
+                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reputation</th>
+                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Thao tác</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach (var u in Model)
+            <tbody class="divide-y divide-slate-200">
+                @foreach (var user in Model.Users)
                 {
-                    <tr>
-                        <td class="s-table--cell va-middle">
-                            <span class="fc-light fs-caption">#@u.Id</span>
-                        </td>
-                        <td class="s-table--cell va-middle">
-                            <div class="d-flex ai-center gap8">
-                                <div class="s-avatar s-avatar__24">
-                                    <img class="s-avatar--image" src="https://api.dicebear.com/7.x/avataaars/svg?seed=@u.UserName" alt="@u.UserName" />
+                    var roles = await UserManager.GetRolesAsync(user);
+                    var currentRole = roles.FirstOrDefault() ?? "User";
+                    
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full border border-slate-200 overflow-hidden shrink-0">
+                                    <img src="@(string.IsNullOrEmpty(user.AvatarUrl) ? $"https://api.dicebear.com/7.x/avataaars/svg?seed={user.UserName}" : user.AvatarUrl)" 
+                                         alt="@user.UserName" class="w-full h-full object-cover">
                                 </div>
-                                <span class="fw-bold fc-dark">@u.UserName</span>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900">@user.UserName</div>
+                                    <div class="text-xs text-slate-500">@user.Email</div>
+                                </div>
                             </div>
                         </td>
-                        <td class="s-table--cell va-middle">
-                            @u.Email
-                        </td>
-                        <td class="s-table--cell va-middle">
-                            <span class="fw-bold fc-black-600">@u.Reputation</span>
-                        </td>
-                        <td class="s-table--cell va-middle">
-                            <span class="fc-light fs-caption" title="@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")">
-                                @u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                            </span>
-                        </td>
-                        <td class="s-table--cell va-middle ta-right">
-                            <form method="post" asp-action="DeleteUser" asp-route-id="@u.Id"
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng @u.UserName? Hành động này không thể hoàn tác.');"
-                                  class="d-inline">
+                        <td class="px-6 py-4">
+                            <form asp-action="ChangeRole" asp-route-id="@user.Id" method="post" class="inline">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="s-btn s-btn__danger s-btn__xs s-btn__outlined ws-nowrap" title="Xóa người dùng này">
-                                    Xóa
-                                </button>
+                                <select name="role" onchange="this.form.submit()" 
+                                        class="text-xs font-bold rounded-md border-none bg-slate-100 px-2 py-1 focus:ring-0 cursor-pointer @(currentRole == "Admin" ? "text-red-700 bg-red-50" : "text-slate-700")">
+                                    <option value="User" selected="@(currentRole == "User")">User</option>
+                                    <option value="Admin" selected="@(currentRole == "Admin")">Admin</option>
+                                </select>
                             </form>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if (user.IsBanned)
+                            {
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                    🔴 Khóa
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                    🟢 Hoạt động
+                                </span>
+                            }
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <form asp-action="AdjustReputation" asp-route-id="@user.Id" asp-route-amount="-5" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="text-slate-400 hover:text-red-500">-</button>
+                                </form>
+                                <span class="text-sm font-bold text-slate-700">@user.Reputation</span>
+                                <form asp-action="AdjustReputation" asp-route-id="@user.Id" asp-route-amount="5" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="text-slate-400 hover:text-green-500">+</button>
+                                </form>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <form asp-action="ToggleBan" asp-route-id="@user.Id" method="post" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" 
+                                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all @(user.IsBanned ? "bg-slate-100 text-slate-700 hover:bg-slate-200" : "bg-orange-100 text-orange-700 hover:bg-orange-200")">
+                                        @(user.IsBanned ? "Mở khóa" : "Khóa")
+                                    </button>
+                                </form>
+                                <form asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="inline" 
+                                      onsubmit="return confirm('Xóa vĩnh viễn @user.UserName? Dữ liệu không thể khôi phục!');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all">
+                                        Xóa
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+    </div>
 
-        @if (!Model.Any())
+    @if (!Model.Users.Any())
+    {
+        <div class="p-12 text-center text-slate-400 italic">
+            Không tìm thấy kết quả nào phù hợp.
+        </div>
+    }
+</div>
+
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+    <h3 class="font-bold text-slate-800 mb-4 text-sm uppercase tracking-wider">Thành viên mới nhất</h3>
+    <div class="flex flex-wrap gap-4">
+        @foreach (var u in stats.RecentUsers)
         {
-            <div class="p24 ta-center fc-light fs-body2">
-                Không tìm thấy người dùng nào.
+            <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                <div class="w-6 h-6 rounded-full overflow-hidden">
+                    <img src="@(string.IsNullOrEmpty(u.AvatarUrl) ? $"https://api.dicebear.com/7.x/avataaars/svg?seed={u.UserName}" : u.AvatarUrl)" class="w-full h-full object-cover">
+                </div>
+                <span class="text-xs font-medium text-slate-700">@u.UserName</span>
             </div>
         }
     </div>
